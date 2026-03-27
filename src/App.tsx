@@ -108,12 +108,7 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }: { isOpen: boolean, onClos
           redirectTo: window.location.origin
         }
       });
-      if (error) {
-        if (error.message.includes('provider is not enabled')) {
-          throw new Error('Google Sign-In is not enabled in your Supabase project. Please go to Authentication -> Providers in your Supabase dashboard and enable Google.');
-        }
-        throw error;
-      }
+      if (error) throw error;
     } catch (err: any) {
       setError(err.message);
     }
@@ -399,7 +394,7 @@ const StoryCard = ({ story, categories, onClick }: any) => {
               {story.isReel ? 'Reel' : (categories.find((c: any) => c.id === story.category_id)?.name || 'Story')}
             </span>
             {story.profiles && (
-              <div className="flex items-center gap-1.5" onClick={(e) => { e.stopPropagation(); setSelectedUser(story.user_id); }}>
+              <div className="flex items-center gap-1.5">
                 <div className="w-4 h-4 rounded-full bg-white/10 overflow-hidden border border-white/10">
                   {story.profiles.avatar_url ? (
                     <img src={story.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -407,7 +402,7 @@ const StoryCard = ({ story, categories, onClick }: any) => {
                     <UserIcon className="w-full h-full p-0.5 text-white/50" />
                   )}
                 </div>
-                <span className="text-[9px] font-bold text-white/70 hover:text-white transition-colors">@{story.profiles.username}</span>
+                <span className="text-[9px] font-bold text-white/70">@{story.profiles.username}</span>
               </div>
             )}
           </div>
@@ -458,7 +453,7 @@ const WallpaperCard = ({ wallpaper, categories, onClick }: any) => {
               {categories.find((c: any) => c.id === wallpaper.category_id)?.name || 'Wallpaper'}
             </span>
             {wallpaper.profiles && (
-              <div className="flex items-center gap-2" onClick={(e) => { e.stopPropagation(); setSelectedUser(wallpaper.user_id); }}>
+              <div className="flex items-center gap-2">
                 <div className="w-5 h-5 rounded-full bg-white/10 overflow-hidden border border-white/10">
                   {wallpaper.profiles.avatar_url ? (
                     <img src={wallpaper.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -466,7 +461,7 @@ const WallpaperCard = ({ wallpaper, categories, onClick }: any) => {
                     <UserIcon className="w-full h-full p-1 text-white/50" />
                   )}
                 </div>
-                <span className="text-[10px] font-bold text-white/70 hover:text-white transition-colors">@{wallpaper.profiles.username}</span>
+                <span className="text-[10px] font-bold text-white/70">@{wallpaper.profiles.username}</span>
               </div>
             )}
           </div>
@@ -480,7 +475,6 @@ const WallpaperCard = ({ wallpaper, categories, onClick }: any) => {
 };
 
 export default function App() {
-  const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -490,7 +484,6 @@ export default function App() {
   const [reels, setReels] = useState<Reel[]>([]);
   const [wallpapers, setWallpapers] = useState<Wallpaper[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [selectedWallpaper, setSelectedWallpaper] = useState<Wallpaper | null>(null);
   const [selectedStory, setSelectedStory] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -517,7 +510,7 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id, session.user);
+        fetchProfile(session.user.id);
       } else {
         setProfile(null);
       }
@@ -526,70 +519,89 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Real-time subscription for wallpapers
+  useEffect(() => {
+    const wallpaperSubscription = supabase
+      .channel('public:wallpapers')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'wallpapers' },
+        (payload) => {
+          console.log('Wallpaper changed:', payload);
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      wallpaperSubscription.unsubscribe();
+    };
+  }, []);
+
   const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     setUser(session?.user ?? null);
     if (session?.user) {
-      fetchProfile(session.user.id, session.user);
+      fetchProfile(session.user.id);
     }
   };
 
-  const fetchProfile = async (userId: string, authUser?: any) => {
+  const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single();
     
-    if (data) {
-      setProfile(data);
-    } else if (authUser) {
-      // Create profile for OAuth users
-      const username = authUser.user_metadata?.full_name?.replace(/\s+/g, '').toLowerCase() || 
-                       authUser.email?.split('@')[0] || 
-                       `user_${Math.random().toString(36).slice(2, 7)}`;
-      const avatar_url = authUser.user_metadata?.avatar_url || '';
-      
-      const { data: newProfile, error: insertError } = await supabase
-        .from('profiles')
-        .insert([{ id: userId, username, avatar_url }])
-        .select()
-        .single();
-      
-      if (newProfile) setProfile(newProfile);
-    }
+    if (data) setProfile(data);
   };
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data: catData } = await supabase
+      const { data: catData, error: catError } = await supabase
         .from('categories')
         .select('*')
         .order('name');
       
-      setCategories(catData || []);
+      if (catError) {
+        console.error('Categories error:', catError);
+      } else {
+        setCategories(catData || []);
+      }
 
-      const { data: storyData } = await supabase
+      const { data: storyData, error: storyError } = await supabase
         .from('stories')
-        .select('*, categories(*), profiles(*)')
+        .select('*')
         .order('created_at', { ascending: false });
 
-      setStories(storyData || []);
+      if (storyError) {
+        console.error('Stories error:', storyError);
+      } else {
+        setStories(storyData || []);
+      }
 
-      const { data: reelData } = await supabase
+      const { data: reelData, error: reelError } = await supabase
         .from('reels')
-        .select('*, profiles(*)')
+        .select('*')
         .order('created_at', { ascending: false });
 
-      setReels(reelData || []);
+      if (reelError) {
+        console.error('Reels error:', reelError);
+      } else {
+        setReels(reelData || []);
+      }
 
-      const { data: wallData } = await supabase
+      const { data: wallData, error: wallError } = await supabase
         .from('wallpapers')
-        .select('*, categories(*), profiles(*)')
+        .select('*')
         .order('created_at', { ascending: false });
 
-      setWallpapers(wallData || []);
+      if (wallError) {
+        console.error('Wallpapers error:', wallError);
+      } else {
+        setWallpapers(wallData || []);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -823,12 +835,6 @@ export default function App() {
     setUploadStatus(null);
 
     try {
-      // Nudity check
-      const isExplicit = await checkNudity(file);
-      if (isExplicit) {
-        throw new Error('Upload denied: Nudity or sexually explicit content detected.');
-      }
-
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `reels/${fileName}`;
@@ -925,7 +931,11 @@ export default function App() {
       setUploadTitle('');
       setUploadCaption('');
       setUploadDescription('');
-      fetchData();
+      setActiveTab('wallpapers');
+      setSelectedCategory('');
+      setTimeout(() => {
+        fetchData();
+      }, 500);
       if (wallpaperInputRef.current) wallpaperInputRef.current.value = '';
     } catch (error: any) {
       console.error('Error uploading wallpaper:', error);
@@ -1086,7 +1096,7 @@ export default function App() {
     }
   };
 
-  const filteredStories = (selectedCategory && !isAdmin
+  const filteredStories = selectedCategory
     ? stories.filter(s => s.category_id === selectedCategory)
     : [
         ...stories.map(s => ({ ...s, isReel: false })),
@@ -1097,17 +1107,13 @@ export default function App() {
           created_at: r.created_at,
           isReel: true,
           caption: r.caption,
-          music_name: r.music_name,
-          profiles: r.profiles,
-          user_id: r.user_id
+          music_name: r.music_name
         }))
-      ].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
-  ).filter(item => !selectedUser || item.user_id === selectedUser);
+      ].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
 
-  const filteredWallpapers = (selectedCategory 
+  const filteredWallpapers = selectedCategory 
     ? wallpapers.filter(w => w.category_id === selectedCategory)
-    : wallpapers
-  ).filter(w => !selectedUser || w.user_id === selectedUser);
+    : wallpapers;
 
   const activeCategories = categories.filter(cat => {
     if (activeTab === 'stories') {
@@ -1119,97 +1125,11 @@ export default function App() {
     return false;
   });
 
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState<{ type: 'category' | 'story' | 'reel' | 'wallpaper', id: string, extra?: string } | null>(null);
-  const [adminPassword, setAdminPassword] = useState('');
-  const [passwordError, setPasswordError] = useState(false);
-
-  const handleAdminToggle = () => {
-    if (isAdmin) {
-      setIsAdmin(false);
-    } else {
-      setShowPasswordModal(true);
-      setAdminPassword('');
-      setPasswordError(false);
-    }
-  };
-
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (adminPassword === 'admin123') {
-      setIsAdmin(true);
-      setShowPasswordModal(false);
-      setAdminPassword('');
-      setPasswordError(false);
-    } else {
-      setPasswordError(true);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#0F0F0F] text-white font-sans selection:bg-orange-500/30">
-      {/* Admin Password Modal */}
-      <AnimatePresence>
-        {showPasswordModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowPasswordModal(false)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-md bg-[#1A1A1A] border border-white/10 rounded-3xl p-8 shadow-2xl"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold flex items-center gap-2">
-                  <Settings className="w-6 h-6 text-orange-500" />
-                  Admin Access
-                </h2>
-                <button 
-                  onClick={() => setShowPasswordModal(false)}
-                  className="p-2 hover:bg-white/5 rounded-full transition-colors"
-                >
-                  <XCircle className="w-6 h-6 text-white/40" />
-                </button>
-              </div>
-              
-              <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-white/40 mb-2">Enter Admin Password</label>
-                  <input 
-                    type="password" 
-                    autoFocus
-                    value={adminPassword}
-                    onChange={(e) => {
-                      setAdminPassword(e.target.value);
-                      setPasswordError(false);
-                    }}
-                    placeholder="••••••••"
-                    className={cn(
-                      "w-full bg-black/40 border rounded-xl px-4 py-3 focus:outline-none transition-all",
-                      passwordError ? "border-red-500 focus:ring-2 focus:ring-red-500/50" : "border-white/10 focus:ring-2 focus:ring-orange-500/50"
-                    )}
-                  />
-                  {passwordError && (
-                    <p className="text-red-500 text-xs mt-2 font-medium">Incorrect password. Please try again.</p>
-                  )}
-                </div>
-                <button 
-                  type="submit"
-                  className="w-full bg-orange-500 hover:bg-orange-600 py-3 rounded-xl font-bold transition-all shadow-lg shadow-orange-500/20 active:scale-95"
-                >
-                  Unlock Admin Panel
-                </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
@@ -1318,12 +1238,7 @@ export default function App() {
             </button>
           )}
           
-          <button 
-            onClick={handleAdminToggle}
-            className="p-2.5 rounded-full hover:bg-white/5 transition-colors text-white/60 hover:text-white"
-          >
-            {isAdmin ? <Home className="w-5 h-5" /> : <Settings className="w-5 h-5" />}
-          </button>
+
         </div>
       </nav>
 
@@ -1334,8 +1249,7 @@ export default function App() {
       />
 
       {/* Tab Switcher */}
-      {!isAdmin && (
-        <div className="max-w-7xl mx-auto px-6 mt-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-6 mt-6">
           <div className="flex bg-white/5 p-1 rounded-2xl w-fit border border-white/10">
             <button 
               onClick={() => setActiveTab('stories')}
@@ -1368,29 +1282,7 @@ export default function App() {
               Wallpapers
             </button>
           </div>
-
-          {selectedUser && (
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-3 bg-orange-500/10 border border-orange-500/20 px-4 py-2 rounded-2xl"
-            >
-              <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">
-                Viewing @{stories.find(s => s.user_id === selectedUser)?.profiles?.username || 
-                          wallpapers.find(w => w.user_id === selectedUser)?.profiles?.username || 
-                          reels.find(r => r.user_id === selectedUser)?.profiles?.username || 
-                          'User'}'s Posts
-              </span>
-              <button 
-                onClick={() => setSelectedUser(null)}
-                className="p-1 hover:bg-orange-500/20 rounded-full transition-colors"
-              >
-                <X className="w-4 h-4 text-orange-500" />
-              </button>
-            </motion.div>
-          )}
         </div>
-      )}
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {isAdmin ? (
@@ -1998,10 +1890,7 @@ export default function App() {
                 <div className="space-y-6">
                   {/* Author Info */}
                   {selectedStory.profiles && (
-                    <div 
-                      className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all"
-                      onClick={() => { setSelectedUser(selectedStory.user_id); setSelectedStory(null); }}
-                    >
+                    <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
                       <div className="w-12 h-12 rounded-full bg-white/10 overflow-hidden border border-white/10">
                         {selectedStory.profiles.avatar_url ? (
                           <img src={selectedStory.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -2011,7 +1900,7 @@ export default function App() {
                       </div>
                       <div>
                         <h4 className="font-black text-white">@{selectedStory.profiles.username}</h4>
-                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">View Profile</p>
+                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Content Creator</p>
                       </div>
                     </div>
                   )}
@@ -2176,10 +2065,7 @@ export default function App() {
                 <div className="space-y-6">
                   {/* Author Info */}
                   {selectedWallpaper.profiles && (
-                    <div 
-                      className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all"
-                      onClick={() => { setSelectedUser(selectedWallpaper.user_id); setSelectedWallpaper(null); }}
-                    >
+                    <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
                       <div className="w-12 h-12 rounded-full bg-white/10 overflow-hidden border border-white/10">
                         {selectedWallpaper.profiles.avatar_url ? (
                           <img src={selectedWallpaper.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
@@ -2189,7 +2075,7 @@ export default function App() {
                       </div>
                       <div>
                         <h4 className="font-black text-white">@{selectedWallpaper.profiles.username}</h4>
-                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">View Profile</p>
+                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Wallpaper Artist</p>
                       </div>
                     </div>
                   )}
