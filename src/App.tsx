@@ -560,33 +560,49 @@ export default function App() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data: catData } = await supabase
+      const { data: catData, error: catError } = await supabase
         .from('categories')
         .select('*')
         .order('name');
       
-      setCategories(catData || []);
+      if (catError) {
+        console.error('Categories error:', catError);
+      } else {
+        setCategories(catData || []);
+      }
 
-      const { data: storyData } = await supabase
+      const { data: storyData, error: storyError } = await supabase
         .from('stories')
         .select('*, categories(*), profiles(*)')
         .order('created_at', { ascending: false });
 
-      setStories(storyData || []);
+      if (storyError) {
+        console.error('Stories error:', storyError);
+      } else {
+        setStories(storyData || []);
+      }
 
-      const { data: reelData } = await supabase
+      const { data: reelData, error: reelError } = await supabase
         .from('reels')
         .select('*, profiles(*)')
         .order('created_at', { ascending: false });
 
-      setReels(reelData || []);
+      if (reelError) {
+        console.error('Reels error:', reelError);
+      } else {
+        setReels(reelData || []);
+      }
 
-      const { data: wallData } = await supabase
+      const { data: wallData, error: wallError } = await supabase
         .from('wallpapers')
         .select('*, categories(*), profiles(*)')
         .order('created_at', { ascending: false });
 
-      setWallpapers(wallData || []);
+      if (wallError) {
+        console.error('Wallpapers error:', wallError);
+      } else {
+        setWallpapers(wallData || []);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
