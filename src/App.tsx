@@ -520,6 +520,25 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Real-time subscription for wallpapers
+  useEffect(() => {
+    const wallpaperSubscription = supabase
+      .channel('public:wallpapers')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'wallpapers' },
+        (payload) => {
+          console.log('Wallpaper changed:', payload);
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      wallpaperSubscription.unsubscribe();
+    };
+  }, []);
+
   const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     setUser(session?.user ?? null);
@@ -897,7 +916,11 @@ export default function App() {
       setUploadTitle('');
       setUploadCaption('');
       setUploadDescription('');
-      fetchData();
+      setActiveTab('wallpapers');
+      setSelectedCategory('');
+      setTimeout(() => {
+        fetchData();
+      }, 500);
       if (wallpaperInputRef.current) wallpaperInputRef.current.value = '';
     } catch (error: any) {
       console.error('Error uploading wallpaper:', error);
