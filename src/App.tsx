@@ -475,7 +475,6 @@ const WallpaperCard = ({ wallpaper, categories, onClick }: any) => {
 };
 
 export default function App() {
-  const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -1097,7 +1096,7 @@ export default function App() {
     }
   };
 
-  const filteredStories = selectedCategory && !isAdmin
+  const filteredStories = selectedCategory
     ? stories.filter(s => s.category_id === selectedCategory)
     : [
         ...stories.map(s => ({ ...s, isReel: false })),
@@ -1126,97 +1125,11 @@ export default function App() {
     return false;
   });
 
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState<{ type: 'category' | 'story' | 'reel' | 'wallpaper', id: string, extra?: string } | null>(null);
-  const [adminPassword, setAdminPassword] = useState('');
-  const [passwordError, setPasswordError] = useState(false);
-
-  const handleAdminToggle = () => {
-    if (isAdmin) {
-      setIsAdmin(false);
-    } else {
-      setShowPasswordModal(true);
-      setAdminPassword('');
-      setPasswordError(false);
-    }
-  };
-
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (adminPassword === 'admin123') {
-      setIsAdmin(true);
-      setShowPasswordModal(false);
-      setAdminPassword('');
-      setPasswordError(false);
-    } else {
-      setPasswordError(true);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#0F0F0F] text-white font-sans selection:bg-orange-500/30">
-      {/* Admin Password Modal */}
-      <AnimatePresence>
-        {showPasswordModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowPasswordModal(false)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-md bg-[#1A1A1A] border border-white/10 rounded-3xl p-8 shadow-2xl"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold flex items-center gap-2">
-                  <Settings className="w-6 h-6 text-orange-500" />
-                  Admin Access
-                </h2>
-                <button 
-                  onClick={() => setShowPasswordModal(false)}
-                  className="p-2 hover:bg-white/5 rounded-full transition-colors"
-                >
-                  <XCircle className="w-6 h-6 text-white/40" />
-                </button>
-              </div>
-              
-              <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-white/40 mb-2">Enter Admin Password</label>
-                  <input 
-                    type="password" 
-                    autoFocus
-                    value={adminPassword}
-                    onChange={(e) => {
-                      setAdminPassword(e.target.value);
-                      setPasswordError(false);
-                    }}
-                    placeholder="••••••••"
-                    className={cn(
-                      "w-full bg-black/40 border rounded-xl px-4 py-3 focus:outline-none transition-all",
-                      passwordError ? "border-red-500 focus:ring-2 focus:ring-red-500/50" : "border-white/10 focus:ring-2 focus:ring-orange-500/50"
-                    )}
-                  />
-                  {passwordError && (
-                    <p className="text-red-500 text-xs mt-2 font-medium">Incorrect password. Please try again.</p>
-                  )}
-                </div>
-                <button 
-                  type="submit"
-                  className="w-full bg-orange-500 hover:bg-orange-600 py-3 rounded-xl font-bold transition-all shadow-lg shadow-orange-500/20 active:scale-95"
-                >
-                  Unlock Admin Panel
-                </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
@@ -1325,12 +1238,7 @@ export default function App() {
             </button>
           )}
           
-          <button 
-            onClick={handleAdminToggle}
-            className="p-2.5 rounded-full hover:bg-white/5 transition-colors text-white/60 hover:text-white"
-          >
-            {isAdmin ? <Home className="w-5 h-5" /> : <Settings className="w-5 h-5" />}
-          </button>
+
         </div>
       </nav>
 
@@ -1341,8 +1249,7 @@ export default function App() {
       />
 
       {/* Tab Switcher */}
-      {!isAdmin && (
-        <div className="max-w-7xl mx-auto px-6 mt-6">
+      <div className="max-w-7xl mx-auto px-6 mt-6">
           <div className="flex bg-white/5 p-1 rounded-2xl w-fit border border-white/10">
             <button 
               onClick={() => setActiveTab('stories')}
@@ -1376,11 +1283,8 @@ export default function App() {
             </button>
           </div>
         </div>
-      )}
 
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {isAdmin ? (
-          <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex flex-col md:flex-row gap-8">
               {/* Category Management */}
               <section className="flex-1 bg-white/5 border border-white/10 rounded-3xl p-8">
