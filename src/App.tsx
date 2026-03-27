@@ -573,7 +573,7 @@ export default function App() {
 
       const { data: storyData, error: storyError } = await supabase
         .from('stories')
-        .select('*, categories(*), profiles(*)')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (storyError) {
@@ -584,7 +584,7 @@ export default function App() {
 
       const { data: reelData, error: reelError } = await supabase
         .from('reels')
-        .select('*, profiles(*)')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (reelError) {
@@ -595,7 +595,7 @@ export default function App() {
 
       const { data: wallData, error: wallError } = await supabase
         .from('wallpapers')
-        .select('*, categories(*), profiles(*)')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (wallError) {
