@@ -395,19 +395,33 @@ export const UserPanel: React.FC<UserPanelProps> = ({
       {/* User Header */}
       <nav className="bg-white/5 backdrop-blur-xl border-b border-white/10 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-black bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
-            My Content
-          </h1>
-          <div className="flex gap-4">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate('/')} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+              <ArrowLeft className="w-6 h-6 text-white" />
+            </button>
+            <h1 className="text-2xl font-black bg-gradient-to-r from-orange-500 to-rose-500 bg-clip-text text-transparent">
+              USER PANEL
+            </h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-3 pr-4 border-r border-white/10">
+              <div className="w-8 h-8 rounded-full bg-white/10 border border-white/10 overflow-hidden">
+                {profile?.avatar_url ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" /> : <UserIcon className="w-full h-full p-2 text-white/40" />}
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-white">@{profile?.username || 'user'}</p>
+                <p className="text-[9px] text-white/40 italic">Member since {profile ? new Date(profile.created_at).toLocaleDateString() : 'recently'}</p>
+              </div>
+            </div>
             <button
               onClick={() => navigate('/')}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-xs font-bold"
             >
               View Site
             </button>
             <button
               onClick={() => supabase.auth.signOut()}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-xs font-bold"
             >
               Logout
             </button>
@@ -415,7 +429,29 @@ export const UserPanel: React.FC<UserPanelProps> = ({
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        {/* Blocked User Warning */}
+        {isBlocked && (
+          <div className="bg-rose-500/10 border border-rose-500/20 rounded-3xl p-8 text-center space-y-4 animate-in fade-in slide-in-from-top-4 duration-500 shadow-2xl shadow-rose-500/10">
+            <div className="w-16 h-16 bg-rose-500/20 rounded-full flex items-center justify-center mx-auto">
+               <XCircle className="w-8 h-8 text-rose-500" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-black text-rose-500 uppercase tracking-tighter">Your Account is Blocked</h2>
+              <p className="text-white/60 text-sm max-w-md mx-auto leading-relaxed">
+                Admin Jigs has restricted your access. You can view your current posts and handle comments, but you <span className="text-rose-500 font-bold uppercase">cannot upload</span> new content.
+              </p>
+              {profile?.blocked_until && (
+                <div className="bg-rose-500/10 px-4 py-2 rounded-full w-fit mx-auto border border-rose-500/20 mt-4">
+                   <p className="text-rose-500 text-[10px] font-black uppercase tracking-widest">
+                      Block Expires: {new Date(profile.blocked_until).toLocaleString()}
+                   </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Upload Section */}
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6 mb-8">
           <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
@@ -427,8 +463,8 @@ export const UserPanel: React.FC<UserPanelProps> = ({
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              disabled={isUploading}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white appearance-none"
+              disabled={isUploading || isBlocked}
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="" disabled>Select Category (for Stories/Wallpapers)</option>
               {categories.map(cat => (
@@ -442,23 +478,37 @@ export const UserPanel: React.FC<UserPanelProps> = ({
               placeholder="Title (optional)"
               value={uploadTitle}
               onChange={(e) => setUploadTitle(e.target.value)}
-              disabled={isUploading}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white placeholder:text-white/40"
+              disabled={isUploading || isBlocked}
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white placeholder:text-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <input
               type="text"
               placeholder="Caption (optional)"
               value={uploadCaption}
               onChange={(e) => setUploadCaption(e.target.value)}
-              disabled={isUploading}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white placeholder:text-white/40"
+              disabled={isUploading || isBlocked}
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white placeholder:text-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
             />
+            <button
+              onClick={() => {
+                if(isBlocked) {
+                  alert("Your account is blocked by Admin Jigs. Uploading is disabled.");
+                  return;
+                }
+                document.getElementById('file-upload')?.click();
+              }}
+              disabled={isUploading || isBlocked}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-30 disabled:grayscale"
+            >
+              {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+              {isUploading ? 'Uploading...' : 'Upload Content'}
+            </button>
             <textarea
               placeholder="Description (optional)"
               value={uploadDescription}
               onChange={(e) => setUploadDescription(e.target.value)}
-              disabled={isUploading}
-              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white placeholder:text-white/40 min-h-[100px] resize-none"
+              disabled={isUploading || isBlocked}
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white placeholder:text-white/40 min-h-[100px] resize-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
