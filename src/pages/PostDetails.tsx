@@ -29,7 +29,11 @@ export const PostDetails: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
+    const initSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setUser(data.session?.user ?? null);
+    };
+    initSession();
     
     if (type && id) {
       fetchPostDetails();
@@ -37,6 +41,12 @@ export const PostDetails: React.FC = () => {
       fetchSuggestions();
     }
   }, [type, id]);
+
+  useEffect(() => {
+    if (user && id) {
+      checkIfSaved(id);
+    }
+  }, [user, id]);
 
   const fetchPostDetails = async () => {
     setLoading(true);
@@ -71,9 +81,6 @@ export const PostDetails: React.FC = () => {
         }
       }
       setPost(data);
-      if (user) {
-        checkIfSaved((data as any).id);
-      }
     }
     setLoading(false);
   };
