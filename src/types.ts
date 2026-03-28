@@ -58,6 +58,7 @@ export interface Wallpaper {
   created_at: string;
   likes_count: number;
   downloads_count: number;
+  video_url?: string;
   category?: Category;
   profiles?: Profile;
 }

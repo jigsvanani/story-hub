@@ -781,6 +781,7 @@ export default function App() {
         throw new Error('Upload denied: Nudity or sexually explicit content detected.');
       }
 
+      const isVideo = file.type.startsWith('video/');
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `wallpapers/${fileName}`;
@@ -795,20 +796,29 @@ export default function App() {
         .from('story-images')
         .getPublicUrl(filePath);
 
+      const insertData: any = { 
+        category_id: selectedCategory,
+        user_id: user.id,
+        likes_count: 0,
+        downloads_count: 0,
+        title: uploadTitle.trim() || null,
+        caption: uploadCaption.trim() || null,
+        description: uploadDescription.trim() || null
+      };
+
+      if (isVideo) {
+        insertData.video_url = publicUrl;
+        insertData.image_url = publicUrl; // Fallback for constraints
+      } else {
+        insertData.image_url = publicUrl;
+      }
+
       const { error: dbError } = await supabase
         .from('wallpapers')
-        .insert([{ 
-          image_url: publicUrl, 
-          category_id: selectedCategory,
-          user_id: user.id,
-          likes_count: 0,
-          downloads_count: 0,
-          title: uploadTitle.trim() || null,
-          caption: uploadCaption.trim() || null,
-          description: uploadDescription.trim() || null
-        }]);
+        .insert([insertData]);
 
       if (dbError) throw dbError;
+
 
       setUploadStatus({ type: 'success', message: 'Wallpaper uploaded successfully!' });
       setUploadTitle('');
@@ -1409,7 +1419,7 @@ export default function App() {
                       </select>
                       <input 
                         type="file" 
-                        accept="image/*"
+                        accept="image/*,video/*"
                         ref={wallpaperInputRef}
                         onChange={handleWallpaperUpload}
                         className="hidden"
@@ -1420,7 +1430,7 @@ export default function App() {
                         className="w-full bg-white/5 hover:bg-white/10 border border-white/10 py-4 rounded-xl flex flex-col items-center justify-center gap-2 transition-all group"
                       >
                         <Upload className="w-6 h-6 text-white/40 group-hover:text-orange-500 transition-colors" />
-                        <span className="text-sm font-medium text-white/60">Choose Wallpaper</span>
+                        <span className="text-sm font-medium text-white/60">Choose Wallpaper (Image or Video)</span>
                       </button>
                     </div>
                   </div>
