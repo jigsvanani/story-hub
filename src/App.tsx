@@ -938,25 +938,82 @@ export default function App() {
     return false;
   };
 
-  const filteredStories = stories.filter(story => {
-    if (isUserBlocked(story.user_id)) return false;
-    if (selectedCategory && story.category_id !== selectedCategory) return false;
-    if (selectedUser && story.user_id !== selectedUser) return false;
-    return true;
-  });
+  const filteredStories = stories
+    .filter(story => {
+      if (isUserBlocked(story.user_id)) return false;
+      if (selectedCategory && story.category_id !== selectedCategory) return false;
+      if (selectedUser && story.user_id !== selectedUser) return false;
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        return (story.title || '').toLowerCase().includes(query);
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (!searchQuery.trim()) return 0;
+      const query = searchQuery.toLowerCase().trim();
+      const titleA = (a.title || '').toLowerCase();
+      const titleB = (b.title || '').toLowerCase();
+      
+      // Exact match
+      if (titleA === query && titleB !== query) return -1;
+      if (titleB === query && titleA !== query) return 1;
+      
+      // Starts with
+      if (titleA.startsWith(query) && !titleB.startsWith(query)) return -1;
+      if (titleB.startsWith(query) && !titleA.startsWith(query)) return 1;
+      
+      return 0;
+    });
 
-  const filteredReels = reels.filter(reel => {
-    if (isUserBlocked(reel.user_id)) return false;
-    if (selectedUser && reel.user_id !== selectedUser) return false;
-    return true;
-  });
+  const filteredReels = reels
+    .filter(reel => {
+      if (isUserBlocked(reel.user_id)) return false;
+      if (selectedUser && reel.user_id !== selectedUser) return false;
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        return (reel.title || reel.caption || '').toLowerCase().includes(query);
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (!searchQuery.trim()) return 0;
+      const query = searchQuery.toLowerCase().trim();
+      const titleA = (a.title || a.caption || '').toLowerCase();
+      const titleB = (b.title || b.caption || '').toLowerCase();
+      
+      if (titleA === query && titleB !== query) return -1;
+      if (titleB === query && titleA !== query) return 1;
+      if (titleA.startsWith(query) && !titleB.startsWith(query)) return -1;
+      if (titleB.startsWith(query) && !titleA.startsWith(query)) return 1;
+      
+      return 0;
+    });
 
-  const filteredWallpapers = wallpapers.filter(wallpaper => {
-    if (isUserBlocked(wallpaper.user_id)) return false;
-    if (selectedCategory && wallpaper.category_id !== selectedCategory) return false;
-    if (selectedUser && wallpaper.user_id !== selectedUser) return false;
-    return true;
-  });
+  const filteredWallpapers = wallpapers
+    .filter(wallpaper => {
+      if (isUserBlocked(wallpaper.user_id)) return false;
+      if (selectedCategory && wallpaper.category_id !== selectedCategory) return false;
+      if (selectedUser && wallpaper.user_id !== selectedUser) return false;
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        return (wallpaper.title || '').toLowerCase().includes(query);
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (!searchQuery.trim()) return 0;
+      const query = searchQuery.toLowerCase().trim();
+      const titleA = (a.title || '').toLowerCase();
+      const titleB = (b.title || '').toLowerCase();
+      
+      if (titleA === query && titleB !== query) return -1;
+      if (titleB === query && titleA !== query) return 1;
+      if (titleA.startsWith(query) && !titleB.startsWith(query)) return -1;
+      if (titleB.startsWith(query) && !titleA.startsWith(query)) return 1;
+      
+      return 0;
+    });
 
   const activeCategories = categories.filter(cat => {
     if (activeTab === 'stories') {
@@ -1920,11 +1977,7 @@ export default function App() {
             ) : filteredStories.length > 0 ? (
               <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-4 space-y-4">
                 {filteredStories.map(story => (
-                  <StoryCard 
-                    key={story.id}
-                    story={story}
-                    categories={categories}
-                  />
+                  <StoryCard key={story.id} story={story} categories={categories} />
                 ))}
               </div>
             ) : (
@@ -1933,7 +1986,53 @@ export default function App() {
                   <ImageIcon className="w-10 h-10 text-white/20" />
                 </div>
                 <h3 className="text-xl font-bold">No stories found</h3>
-                <p className="text-white/40">Try selecting a different category or check back later.</p>
+                <p className="text-white/40">Try a different search or category.</p>
+              </div>
+            )}
+          </div>
+        ) : activeTab === 'reels' ? (
+          <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+             <header className="text-center space-y-4 py-12">
+              <h2 className="text-5xl md:text-7xl font-black tracking-tighter">
+                TRENDING <br />
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-purple-500 to-indigo-600">
+                  REELS
+                </span>
+              </h2>
+              <p className="text-white/40 max-w-lg mx-auto text-lg">
+                Short-form vertical videos to keep you entertained and inspired.
+              </p>
+            </header>
+
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-32 gap-4">
+                <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
+                <p className="text-white/40 font-medium">Loading reels...</p>
+              </div>
+            ) : filteredReels.length > 0 ? (
+              /* Reels Grid */
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                {filteredReels.map(reel => (
+                  <div key={reel.id} 
+                       onClick={() => navigate(`/post/reels/${reel.id}`)}
+                       className="aspect-[9/16] rounded-[2rem] overflow-hidden bg-white/5 border border-white/10 group cursor-pointer relative shadow-2xl">
+                    <video src={reel.video_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Play className="w-10 h-10 text-white fill-white" />
+                    </div>
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <p className="text-xs font-bold line-clamp-1">{reel.caption || 'Untitled'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-32 space-y-4">
+                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto">
+                  <Video className="w-10 h-10 text-white/20" />
+                </div>
+                <h3 className="text-xl font-bold">No reels found</h3>
+                <p className="text-white/40">Try searching for something else.</p>
               </div>
             )}
           </div>
@@ -2003,15 +2102,15 @@ export default function App() {
                   <Palette className="w-10 h-10 text-white/20" />
                 </div>
                 <h3 className="text-xl font-bold">No wallpapers found</h3>
-                <p className="text-white/40">Try selecting a different category or check back later.</p>
+                <p className="text-white/40">Try selecting a different category or search term.</p>
               </div>
             )}
           </div>
         ) : (
-          /* Reels Viewer */
+          /* Reels Viewer (Fallback) */
           <div className="h-[80vh] w-full max-w-md mx-auto relative overflow-hidden rounded-[40px] border-[8px] border-white/10 bg-black shadow-2xl">
             <div className="h-full overflow-y-scroll snap-y snap-mandatory no-scrollbar">
-              {reels.map(reel => (
+              {(searchQuery.trim() ? filteredReels : reels).map(reel => (
                 <div key={reel.id} className="h-full w-full snap-start relative group">
                   <video 
                     src={reel.video_url} 
