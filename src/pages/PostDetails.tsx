@@ -23,6 +23,8 @@ export const PostDetails: React.FC = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [replyToId, setReplyToId] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
@@ -87,13 +89,21 @@ export const PostDetails: React.FC = () => {
     if (data) setSuggestions(data);
   };
 
-  const handleAddComment = async (e: React.FormEvent) => {
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('Are you sure you want to delete this comment?')) return;
+    const { error } = await supabase.from('comments').delete().eq('id', commentId);
+    if (error) alert(error.message);
+    else fetchComments();
+  };
+
+  const handleAddComment = async (e: React.FormEvent, parentId: string | null = null) => {
     e.preventDefault();
     if (!user) {
       alert("Please login to comment.");
       return;
     }
-    if (!newComment.trim() || isSubmittingComment || !id) return;
+    const content = parentId ? replyContent : newComment;
+    if (!content.trim() || isSubmittingComment || !id) return;
     
     setIsSubmittingComment(true);
     try {
@@ -102,11 +112,17 @@ export const PostDetails: React.FC = () => {
         .insert([{
           post_id: id,
           user_id: user.id,
-          content: newComment.trim()
+          content: content.trim(),
+          parent_id: parentId
         }]);
 
       if (error) throw error;
-      setNewComment('');
+      if (parentId) {
+        setReplyContent('');
+        setReplyToId(null);
+      } else {
+        setNewComment('');
+      }
       fetchComments();
     } catch (error: any) {
       alert('Error adding comment: ' + error.message);
@@ -352,26 +368,111 @@ export const PostDetails: React.FC = () => {
                   </button>
                 </form>
 
-                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
+                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 no-scrollbar">
                   {comments.length > 0 ? (
-                    comments.map((comment: any) => (
-                      <div key={comment.id} className="flex gap-3 group">
-                        <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 overflow-hidden flex-shrink-0">
-                          {comment.profiles?.avatar_url ? (
-                            <img src={comment.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <UserIcon className="w-full h-full p-1.5 text-white/50" />
-                          )}
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-black text-white">@{comment.profiles?.username || 'user'}</span>
-                            <span className="text-[10px] text-white/20">{new Date(comment.created_at).toLocaleDateString()}</span>
+                    comments.filter(c => !c.parent_id).map((comment: any) => {
+                      const isOwner = user?.id === post.user_id;
+                      const isAdmin = user?.email === 'jigs.vanani@gmail.com';
+                      const canDelete = isAdmin || isOwner || user?.id === comment.user_id;
+                      const canReply = isOwner || isAdmin;
+
+                      return (
+                        <div key={comment.id} className="space-y-4">
+                          <div className="flex gap-3 group">
+                            <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 overflow-hidden flex-shrink-0">
+                              {comment.profiles?.avatar_url ? (
+                                <img src={comment.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <UserIcon className="w-full h-full p-1.5 text-white/50" />
+                              )}
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-black text-white">@{comment.profiles?.username || 'user'}</span>
+                                  <span className="text-[10px] text-white/20">{new Date(comment.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  {canReply && (
+                                    <button 
+                                      onClick={() => setReplyToId(replyToId === comment.id ? null : comment.id)}
+                                      className="text-[10px] font-bold text-orange-500 hover:text-orange-400"
+                                    >
+                                      Reply
+                                    </button>
+                                  )}
+                                  {canDelete && (
+                                    <button 
+                                      onClick={() => handleDeleteComment(comment.id)}
+                                      className="text-[10px] font-bold text-rose-500 hover:text-rose-400"
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              <p className="text-sm text-white/70 leading-relaxed">{comment.content}</p>
+
+                              {/* Reply Input */}
+                              {replyToId === comment.id && (
+                                <form onSubmit={(e) => handleAddComment(e, comment.id)} className="mt-3 relative">
+                                  <input 
+                                    autoFocus
+                                    type="text" 
+                                    value={replyContent}
+                                    onChange={(e) => setReplyContent(e.target.value)}
+                                    placeholder="Write a reply..."
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-orange-500"
+                                  />
+                                  <button 
+                                    type="submit"
+                                    disabled={!replyContent.trim() || isSubmittingComment}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-orange-500 hover:text-orange-400 disabled:opacity-50"
+                                  >
+                                    <Send className="w-4 h-4" />
+                                  </button>
+                                </form>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-sm text-white/70 leading-relaxed">{comment.content}</p>
+
+                          {/* Render Replies */}
+                          <div className="ml-10 space-y-4 border-l border-white/5 pl-4">
+                            {comments.filter(r => r.parent_id === comment.id).map((reply: any) => (
+                              <div key={reply.id} className="flex gap-3 group">
+                                <div className="w-6 h-6 rounded-full bg-white/5 border border-white/10 overflow-hidden flex-shrink-0">
+                                  {reply.profiles?.avatar_url ? (
+                                    <img src={reply.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <UserIcon className="w-full h-full p-1 text-white/50" />
+                                  )}
+                                </div>
+                                <div className="flex-1 space-y-1">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[11px] font-black text-white">@{reply.profiles?.username || 'user'}</span>
+                                      <span className="text-[9px] text-white/20">{new Date(reply.created_at).toLocaleDateString()}</span>
+                                      {reply.user_id === post.user_id && (
+                                        <span className="text-[8px] bg-orange-500/10 text-orange-500 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider border border-orange-500/20">Author</span>
+                                      )}
+                                    </div>
+                                    { (isAdmin || isOwner || user?.id === reply.user_id) && (
+                                      <button 
+                                        onClick={() => handleDeleteComment(reply.id)}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold text-rose-500 hover:text-rose-400"
+                                      >
+                                        Delete
+                                      </button>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-white/70 leading-relaxed">{reply.content}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="text-center py-8 space-y-2">
                       <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto">

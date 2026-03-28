@@ -493,6 +493,7 @@ export default function App() {
   const [stories, setStories] = useState<Story[]>([]);
   const [reels, setReels] = useState<Reel[]>([]);
   const [wallpapers, setWallpapers] = useState<Wallpaper[]>([]);
+  const [allComments, setAllComments] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -599,6 +600,23 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+    if (user?.email === 'jigs.vanani@gmail.com') {
+      fetchAllComments();
+    }
+  };
+
+  const fetchAllComments = async () => {
+    const { data } = await supabase
+      .from('comments')
+      .select('*, profiles(*)')
+      .order('created_at', { ascending: false });
+    if (data) setAllComments(data);
+  };
+
+  const deleteCommentAdmin = async (id: string) => {
+    if (!confirm('Delete this comment permanentely?')) return;
+    const { error } = await supabase.from('comments').delete().eq('id', id);
+    if (!error) fetchAllComments();
   };
 
 
@@ -1587,6 +1605,77 @@ export default function App() {
                     ))}
                   </div>
                 </div>
+              </div>
+            </section>
+
+            {/* Manage Comments Section (Admin Only) */}
+            <section className="bg-white/5 border border-white/10 rounded-3xl p-8">
+              <h2 className="text-2xl font-bold mb-8 flex items-center gap-2">
+                <MessageSquare className="w-6 h-6 text-orange-500" />
+                Manage All Comments
+              </h2>
+              
+              <div className="bg-black/40 border border-white/5 rounded-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-white/5 border-b border-white/10">
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-white/40">User</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-white/40">Comment</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-white/40">Post Info</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-white/40 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {allComments.map(comment => {
+                        // Find post title/type from state arrays
+                        const post = stories.find(s => s.id === comment.post_id) || 
+                                     wallpapers.find(w => w.id === comment.post_id) ||
+                                     reels.find(r => r.id === comment.post_id);
+                        
+                        return (
+                          <tr key={comment.id} className="hover:bg-white/[0.02] transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-white/10 overflow-hidden flex-shrink-0">
+                                  {comment.profiles?.avatar_url ? (
+                                    <img src={comment.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                                  ) : <UserIcon className="w-full h-full p-1 text-white/40" />}
+                                </div>
+                                <span className="text-sm font-bold">@{comment.profiles?.username || 'user'}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="text-sm text-white/60 line-clamp-2 min-w-[200px]">{comment.content}</p>
+                              {comment.parent_id && (
+                                <span className="text-[10px] bg-orange-500/10 text-orange-500 px-1.5 py-0.5 rounded font-bold uppercase mt-1 inline-block">Reply</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-xs font-medium text-white/40">
+                                {post ? (post.title || 'Untitled Post') : 'Post not found'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <button 
+                                onClick={() => deleteCommentAdmin(comment.id)}
+                                className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
+                                title="Delete Comment"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {allComments.length === 0 && (
+                  <div className="py-20 text-center text-white/20 font-bold uppercase tracking-widest text-sm">
+                    No comments to manage
+                  </div>
+                )}
               </div>
             </section>
           </div>
