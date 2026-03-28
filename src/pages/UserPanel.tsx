@@ -28,6 +28,9 @@ export const UserPanel: React.FC<UserPanelProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [activeTab, setActiveTab] = useState<'stories' | 'reels' | 'wallpapers'>('stories');
+  const [uploadTitle, setUploadTitle] = useState('');
+  const [uploadCaption, setUploadCaption] = useState('');
+  const [uploadDescription, setUploadDescription] = useState('');
 
   // Filter content to show only user's own uploads
   const userStories = stories.filter(story => story.user_id === user?.id);
@@ -104,13 +107,18 @@ export const UserPanel: React.FC<UserPanelProps> = ({
         .insert([{
           user_id: user.id,
           [type === 'stories' ? 'image_url' : type === 'reels' ? 'video_url' : 'image_url']: urlData.publicUrl,
-          title: file.name.split('.')[0],
+          title: uploadTitle.trim() || file.name.split('.')[0],
+          caption: uploadCaption.trim() || null,
+          description: uploadDescription.trim() || null,
           category_id: null // Users can't set categories
         }]);
 
       if (dbError) throw dbError;
 
       setUploadProgress('Upload complete!');
+      setUploadTitle('');
+      setUploadCaption('');
+      setUploadDescription('');
       fetchData();
       setTimeout(() => setUploadProgress(''), 2000);
 
@@ -222,6 +230,32 @@ export const UserPanel: React.FC<UserPanelProps> = ({
             <Upload className="w-5 h-5" />
             Upload New Content
           </h2>
+
+          <div className="space-y-4 mb-6">
+            <input
+              type="text"
+              placeholder="Title (optional)"
+              value={uploadTitle}
+              onChange={(e) => setUploadTitle(e.target.value)}
+              disabled={isUploading}
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white placeholder:text-white/40"
+            />
+            <input
+              type="text"
+              placeholder="Caption (optional)"
+              value={uploadCaption}
+              onChange={(e) => setUploadCaption(e.target.value)}
+              disabled={isUploading}
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white placeholder:text-white/40"
+            />
+            <textarea
+              placeholder="Description (optional)"
+              value={uploadDescription}
+              onChange={(e) => setUploadDescription(e.target.value)}
+              disabled={isUploading}
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-white placeholder:text-white/40 min-h-[100px] resize-none"
+            />
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Stories Upload */}
