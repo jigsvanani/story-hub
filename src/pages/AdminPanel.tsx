@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase';
 import { Category, Story, Reel, Wallpaper } from '../types';
 import { ArrowLeft } from 'lucide-react';
 
+
+interface AdminPanelProps {
   user: { email: string } | null;
   isAdmin: boolean;
   handleAdminToggle: () => void;
