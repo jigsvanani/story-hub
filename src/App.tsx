@@ -388,6 +388,17 @@ export default function App() {
     }
   };
 
+  const handleAdminToggle = () => {
+    if (user?.email === 'jigs.vanani@gmail.com') {
+      setIsAdmin(!isAdmin);
+      if (!isAdmin) {
+        window.history.pushState({}, '', '/admin');
+      } else {
+        window.history.pushState({}, '', '/');
+      }
+    }
+  };
+
   const fetchProfile = async (userId: string, authUser?: any) => {
     const { data, error } = await supabase
       .from('profiles')
@@ -1025,28 +1036,9 @@ export default function App() {
     return false;
   });
 
-  const handleAdminToggle = () => {
-    if (user?.email === 'jigs.vanani@gmail.com') {
-      if (isAdmin) {
-        window.location.href = '/';
-      } else {
-        window.location.href = '/admin';
-      }
-    } else {
-      // For ordinary users, navigate to '/user' panel
-      if (!user) {
-        setIsAuthModalOpen(true);
-      } else {
-        if (window.location.pathname === '/user') {
-          window.location.href = '/';
-        } else {
-          window.location.href = '/user';
-        }
-      }
-    }
-  };
 
-  if (window.location.pathname === '/user') {
+
+  if (isAdmin) {
     return (
       <UserPanel 
         user={user} 
@@ -1056,6 +1048,7 @@ export default function App() {
         reels={reels} 
         wallpapers={wallpapers} 
         fetchData={fetchData} 
+        onExit={() => setIsAdmin(false)}
       />
     );
   }
@@ -1143,6 +1136,17 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-3 sm:hidden">
+               {user?.email === 'jigs.vanani@gmail.com' && (
+                 <button 
+                   onClick={handleAdminToggle}
+                   className={cn(
+                     "p-2 rounded-lg border transition-all active:scale-95",
+                     isAdmin ? "bg-orange-500 border-orange-500 text-white" : "bg-white/5 border-white/10 text-orange-500"
+                   )}
+                 >
+                   <Shield className="w-5 h-5" />
+                 </button>
+               )}
                {user ? (
                 <button 
                   onClick={() => navigate(`/profile/${user.id}`)}
@@ -1191,10 +1195,19 @@ export default function App() {
           <div className="hidden sm:flex items-center gap-4">
              {user ? (
                 <div className="flex items-center gap-4">
-                  {isAdmin && (
-                    <span className="bg-orange-500/10 text-orange-500 text-[10px] font-black px-2 py-1 rounded border border-orange-500/20 uppercase tracking-widest">
-                      Admin Mode
-                    </span>
+                  {user?.email === 'jigs.vanani@gmail.com' && (
+                    <button 
+                      onClick={handleAdminToggle}
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-2 rounded-full border transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest",
+                        isAdmin 
+                          ? "bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20" 
+                          : "bg-white/5 border-white/10 text-orange-500 hover:bg-orange-500/10"
+                      )}
+                    >
+                      <Shield className="w-4 h-4" />
+                      {isAdmin ? 'Exit Admin' : 'Admin Panel'}
+                    </button>
                   )}
                   <button 
                     onClick={() => navigate(`/profile/${user.id}`)}

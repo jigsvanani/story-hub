@@ -18,6 +18,7 @@ interface UserPanelProps {
   reels: Reel[];
   wallpapers: Wallpaper[];
   fetchData: () => void;
+  onExit: () => void;
 }
 
 export const UserPanel: React.FC<UserPanelProps> = ({
@@ -28,6 +29,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({
   reels,
   wallpapers,
   fetchData,
+  onExit,
 }) => {
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
@@ -482,7 +484,7 @@ export const UserPanel: React.FC<UserPanelProps> = ({
       <nav className="bg-white/5 backdrop-blur-xl border-b border-white/10 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/')} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+            <button onClick={onExit} className="p-2 hover:bg-white/10 rounded-full transition-colors">
               <ArrowLeft className="w-6 h-6 text-white" />
             </button>
             <h1 className="text-2xl font-black bg-gradient-to-r from-orange-500 to-rose-500 bg-clip-text text-transparent">
@@ -500,11 +502,11 @@ export const UserPanel: React.FC<UserPanelProps> = ({
               </div>
             </div>
             <button
-              onClick={() => navigate('/')}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-xs font-bold"
-            >
-              View Site
-            </button>
+               onClick={onExit}
+               className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-xs font-bold"
+             >
+               View Site
+             </button>
             <button
               onClick={() => supabase.auth.signOut()}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-xs font-bold"
