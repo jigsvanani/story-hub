@@ -1910,7 +1910,10 @@ export default function App() {
                         if (item.isWallpaper) {
                           return <WallpaperCard key={item.id} wallpaper={item} categories={categories} />;
                         }
-                        return <StoryCard key={item.id} story={item} categories={categories} />;
+                        // Use StoryCard for both stories and reels
+                        // If it's a reel, ensure it has the image_url property (mapped from video_url)
+                        const displayItem = item.isReel ? { ...item, image_url: item.video_url } : item;
+                        return <StoryCard key={item.id} story={displayItem} categories={categories} />;
                       })}
                 </div>
               </div>
