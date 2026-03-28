@@ -1,11 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { Category, Story, Reel, Wallpaper } from './types';
 import { AdminPanel } from './pages/AdminPanel';
 
 export default function Root() {
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [adminPassword, setAdminPassword] = useState('');
+  const [user, setUser] = useState<{ email: string } | null>(null);
   const [stories, setStories] = useState<Story[]>([]);
   const [reels, setReels] = useState<Reel[]>([]);
   const [wallpapers, setWallpapers] = useState<Wallpaper[]>([]);
@@ -13,6 +13,19 @@ export default function Root() {
 
   useEffect(() => {
     fetchData();
+    const session = supabase.auth.session ? supabase.auth.session() : null;
+    if (session && session.user) {
+      setUser({ email: session.user.email });
+    } else {
+      setUser(null);
+    }
+    supabase.auth.onAuthStateChange((_event, session) => {
+      if (session && session.user) {
+        setUser({ email: session.user.email });
+      } else {
+        setUser(null);
+      }
+    });
   }, []);
 
   const fetchData = async () => {
@@ -49,22 +62,13 @@ export default function Root() {
     }
   };
 
-  const handleAdminToggle = () => {
-    if (isAdmin) {
-      setIsAdmin(false);
-      setAdminPassword('');
-    } else {
-      // This will be called when password is correct
-      setIsAdmin(true);
-    }
-  };
+
 
   return (
     <AdminPanel
-      isAdmin={isAdmin}
-      adminPassword={adminPassword}
-      setAdminPassword={setAdminPassword}
-      handleAdminToggle={handleAdminToggle}
+      user={user}
+      isAdmin={user?.email === 'jigs.vanani@gmail.com'}
+      handleAdminToggle={() => {}}
       stories={stories}
       reels={reels}
       wallpapers={wallpapers}
