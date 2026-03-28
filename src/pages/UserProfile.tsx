@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { StoryCard, WallpaperCard } from '../components/ContentCards';
+import { FollowButton } from '../components/FollowButton';
+import { FollowListModal } from '../components/FollowListModal';
 import { Category, Story, Reel, Wallpaper, Profile } from '../types';
 
 export const UserProfile: React.FC = () => {
@@ -14,6 +16,10 @@ export const UserProfile: React.FC = () => {
   const navigate = useNavigate();
   
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [isFollowListOpen, setIsFollowListOpen] = useState<{ isOpen: boolean, type: 'followers' | 'following' }>({ isOpen: false, type: 'followers' });
   const [stories, setStories] = useState<Story[]>([]);
   const [reels, setReels] = useState<Reel[]>([]);
   const [wallpapers, setWallpapers] = useState<Wallpaper[]>([]);
@@ -22,11 +28,17 @@ export const UserProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'stories' | 'reels' | 'wallpapers'>('stories');
 
   useEffect(() => {
+    checkUser();
     if (userId) {
       fetchUserProfile();
       fetchUserData();
     }
   }, [userId]);
+
+  const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    setCurrentUser(session?.user ?? null);
+  };
 
   const fetchUserProfile = async () => {
     const { data, error } = await supabase
@@ -44,6 +56,15 @@ export const UserProfile: React.FC = () => {
       // Fetch Categories for labels
       const { data: catData } = await supabase.from('categories').select('*');
       setCategories(catData || []);
+
+      // Fetch follow counts
+      const [followerRes, followingRes] = await Promise.all([
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', userId),
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', userId)
+      ]);
+
+      setFollowerCount(followerRes.count || 0);
+      setFollowingCount(followingRes.count || 0);
 
       // Fetch user's content
       const [storyRes, reelRes, wallRes] = await Promise.all([
@@ -97,7 +118,7 @@ export const UserProfile: React.FC = () => {
           <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 blur-[100px] -mr-32 -mt-32"></div>
           
           <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-            <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2rem] bg-white/10 border border-white/20 overflow-hidden shadow-2xl">
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2rem] bg-white/10 border border-white/20 overflow-hidden shadow-2xl shrink-0">
               {profile.avatar_url ? (
                 <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
               ) : (
@@ -105,26 +126,61 @@ export const UserProfile: React.FC = () => {
               )}
             </div>
             
-            <div className="text-center md:text-left space-y-4">
-              <div className="space-y-1">
-                <h2 className="text-4xl md:text-5xl font-black tracking-tighter">@{profile.username}</h2>
-                <div className="flex items-center justify-center md:justify-start gap-4 text-white/40 text-sm font-bold uppercase tracking-widest">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4" />
-                    Joined {new Date(profile.created_at).toLocaleDateString()}
+            <div className="flex-1 text-center md:text-left space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-1">
+                  <h2 className="text-4xl md:text-5xl font-black tracking-tighter">@{profile.username}</h2>
+                  <div className="flex items-center justify-center md:justify-start gap-4 text-white/40 text-sm font-bold uppercase tracking-widest">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-4 h-4" />
+                      Joined {new Date(profile.created_at).toLocaleDateString()}
+                    </div>
                   </div>
                 </div>
+
+                <FollowButton 
+                  targetUserId={profile.id} 
+                  currentUserId={currentUser?.id} 
+                  onStatusChange={(isFollowing) => {
+                    setFollowerCount(prev => isFollowing ? prev + 1 : prev - 1);
+                  }}
+                />
               </div>
 
               <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                <div className="px-4 py-2 bg-white/5 rounded-2xl border border-white/10 flex items-center gap-2">
-                  <span className="text-lg font-black">{stories.length + reels.length + wallpapers.length}</span>
-                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Total Posts</span>
+                <div className="px-5 py-3 bg-white/5 rounded-2xl border border-white/10 flex flex-col md:flex-row md:items-center gap-1 md:gap-3 transition hover:bg-white/10">
+                  <span className="text-xl font-black">{stories.length + reels.length + wallpapers.length}</span>
+                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Posts</span>
                 </div>
+                
+                <button 
+                  onClick={() => setIsFollowListOpen({ isOpen: true, type: 'followers' })}
+                  className="px-5 py-3 bg-white/5 rounded-2xl border border-white/10 flex flex-col md:flex-row md:items-center gap-1 md:gap-3 transition hover:bg-white/10 active:scale-95"
+                >
+                  <span className="text-xl font-black">{followerCount}</span>
+                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Followers</span>
+                </button>
+
+                <button 
+                  onClick={() => setIsFollowListOpen({ isOpen: true, type: 'following' })}
+                  className="px-5 py-3 bg-white/5 rounded-2xl border border-white/10 flex flex-col md:flex-row md:items-center gap-1 md:gap-3 transition hover:bg-white/10 active:scale-95"
+                >
+                  <span className="text-xl font-black">{followingCount}</span>
+                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Following</span>
+                </button>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Modal for Followers/Following */}
+        <FollowListModal 
+          isOpen={isFollowListOpen.isOpen}
+          onClose={() => setIsFollowListOpen({ ...isFollowListOpen, isOpen: false })}
+          userId={profile.id}
+          type={isFollowListOpen.type}
+          currentUserId={currentUser?.id}
+        />
 
         {/* Content Tabs */}
         <div className="space-y-8">

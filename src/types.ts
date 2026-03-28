@@ -5,6 +5,14 @@ export interface Profile {
   is_blocked?: boolean;
   blocked_until?: string | null;
   created_at: string;
+  followers_count?: number;
+  following_count?: number;
+}
+
+export interface Follow {
+  follower_id: string;
+  following_id: string;
+  created_at: string;
 }
 
 export interface Category {

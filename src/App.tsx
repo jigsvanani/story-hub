@@ -331,7 +331,8 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'stories' | 'reels' | 'wallpapers'>('stories');
+  const [activeTab, setActiveTab] = useState<'stories' | 'reels' | 'wallpapers' | 'following'>('stories');
+  const [followingIds, setFollowingIds] = useState<string[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [reels, setReels] = useState<Reel[]>([]);
@@ -440,6 +441,19 @@ export default function App() {
         .order('created_at', { ascending: false });
 
       setWallpapers(wallData || []);
+
+      // Fetch following if user is logged in
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: followData } = await supabase
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', session.user.id);
+        
+        if (followData) {
+          setFollowingIds(followData.map(f => f.following_id));
+        }
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -1111,6 +1125,18 @@ export default function App() {
       {!isAdmin && (
         <div className="max-w-7xl mx-auto px-6 mt-6 flex flex-wrap items-center justify-between gap-4">
           <div className="flex bg-white/5 p-1 rounded-2xl w-fit border border-white/10">
+            {user && (
+              <button 
+                onClick={() => setActiveTab('following')}
+                className={cn(
+                  "px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2",
+                  activeTab === 'following' ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20" : "text-white/40 hover:text-white"
+                )}
+              >
+                <UserCircle className="w-4 h-4" />
+                Following
+              </button>
+            )}
             <button 
               onClick={() => setActiveTab('stories')}
               className={cn(
@@ -1711,6 +1737,51 @@ export default function App() {
                 </div>
               </div>
             </section>
+          </div>
+        ) : activeTab === 'following' ? (
+          <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <header className="text-center space-y-4 py-12">
+              <h2 className="text-5xl md:text-7xl font-black tracking-tighter">
+                YOUR SOCIAL <br />
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-500 via-rose-500 to-purple-600">
+                  CIRCLE
+                </span>
+              </h2>
+              <p className="text-white/40 max-w-lg mx-auto text-lg">
+                Stay updated with the latest content from creators you follow.
+              </p>
+            </header>
+
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-32 gap-4">
+                <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
+                <p className="text-white/40 font-medium">Fetching your social circle...</p>
+              </div>
+            ) : (followingIds.length > 0) ? (
+              <div className="space-y-16">
+                {/* Combined Feed of followed content */}
+                <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-4 space-y-4">
+                  {[
+                    ...stories.filter(s => followingIds.includes(s.user_id)),
+                    ...reels.map(r => ({ ...r, isReel: true })).filter(r => followingIds.includes(r.user_id)),
+                    ...wallpapers.map(w => ({ ...w, isWallpaper: true })).filter(w => followingIds.includes(w.user_id))
+                  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((item: any) => {
+                    if (item.isWallpaper) {
+                      return <WallpaperCard key={item.id} wallpaper={item} categories={categories} />;
+                    }
+                    return <StoryCard key={item.id} story={item} categories={categories} />;
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-32 space-y-4">
+                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto">
+                  <UserPanel className="w-10 h-10 text-white/20" />
+                </div>
+                <h3 className="text-xl font-bold">Your feed is empty</h3>
+                <p className="text-white/40">Follow some creators to see their latest Stories, Reels, and Wallpapers here!</p>
+              </div>
+            )}
           </div>
         ) : activeTab === 'stories' ? (
           <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
