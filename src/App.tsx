@@ -530,7 +530,12 @@ export default function App() {
     const { data: { session } } = await supabase.auth.getSession();
     setUser(session?.user ?? null);
     if (session?.user) {
+      if (session.user.email === 'jigs.vanani@gmail.com' && window.location.pathname === '/admin') {
+        setIsAdmin(true);
+      }
       fetchProfile(session.user.id, session.user);
+    } else if (window.location.pathname === '/admin') {
+      setIsAuthModalOpen(true);
     }
   };
 
@@ -1122,8 +1127,20 @@ export default function App() {
   const [showDeleteModal, setShowDeleteModal] = useState<{ type: 'category' | 'story' | 'reel' | 'wallpaper', id: string, extra?: string } | null>(null);
 
   const handleAdminToggle = () => {
-    // Navigate to admin/user panel for all logged-in users
-    window.location.href = '/admin';
+    if (user?.email === 'jigs.vanani@gmail.com') {
+      if (isAdmin) {
+        window.location.href = '/';
+      } else {
+        window.location.href = '/admin';
+      }
+    } else {
+      // If not logged in or not admin, navigate home or open auth modal
+      if (!user) {
+        setIsAuthModalOpen(true);
+      } else {
+        alert("You do not have admin privileges.");
+      }
+    }
   };
 
   return (
