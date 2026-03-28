@@ -318,8 +318,11 @@ export const PostDetails: React.FC = () => {
           <div className="space-y-6">
             {/* Author Info */}
             {post.profiles && (
-              <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
-                <div className="w-12 h-12 rounded-full bg-white/10 overflow-hidden border border-white/10">
+              <div 
+                onClick={() => navigate(`/profile/${post.user_id}`)}
+                className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors group"
+              >
+                <div className="w-12 h-12 rounded-full bg-white/10 overflow-hidden border border-white/10 group-hover:border-white/30 transition-colors">
                   {post.profiles.avatar_url ? (
                     <img src={post.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
                   ) : (
@@ -327,7 +330,7 @@ export const PostDetails: React.FC = () => {
                   )}
                 </div>
                 <div>
-                  <h4 className="font-black text-white">@{post.profiles.username}</h4>
+                  <h4 className="font-black text-white group-hover:text-orange-500 transition-colors">@{post.profiles.username}</h4>
                 </div>
               </div>
             )}
@@ -475,7 +478,10 @@ export const PostDetails: React.FC = () => {
                       return (
                         <div key={comment.id} className="space-y-4">
                           <div className="flex gap-3 group">
-                            <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 overflow-hidden flex-shrink-0">
+                            <div 
+                              onClick={() => navigate(`/profile/${comment.user_id}`)}
+                              className="w-8 h-8 rounded-full bg-white/5 border border-white/10 overflow-hidden flex-shrink-0 cursor-pointer hover:border-white/30 transition-all"
+                            >
                               {comment.profiles?.avatar_url ? (
                                 <img src={comment.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
                               ) : (
@@ -485,7 +491,12 @@ export const PostDetails: React.FC = () => {
                             <div className="flex-1 space-y-1">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs font-black text-white">@{comment.profiles?.username || 'user'}</span>
+                                  <span 
+                                    onClick={() => navigate(`/profile/${comment.user_id}`)}
+                                    className="text-xs font-black text-white cursor-pointer hover:text-orange-500 transition-colors"
+                                  >
+                                    @{comment.profiles?.username || 'user'}
+                                  </span>
                                   <span className="text-[10px] text-white/20">{new Date(comment.created_at).toLocaleDateString()}</span>
                                 </div>
                                 <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
