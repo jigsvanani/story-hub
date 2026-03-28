@@ -80,13 +80,18 @@ export const PostDetails: React.FC = () => {
 
   const checkIfSaved = async (postId: string) => {
     if (!user) return;
-    const { data } = await supabase
-      .from('saved_content')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('post_id', postId)
-      .single();
-    setIsSaved(!!data);
+    try {
+      const { data } = await supabase
+        .from('saved_content')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('post_id', postId);
+      
+      setIsSaved(!!data && data.length > 0);
+    } catch (err) {
+      console.error('Error checking save status:', err);
+      setIsSaved(false);
+    }
   };
 
   const handleSaveToggle = async () => {
@@ -105,6 +110,7 @@ export const PostDetails: React.FC = () => {
           .eq('post_id', id);
         if (error) throw error;
         setIsSaved(false);
+        alert('Post removed from saved content.');
       } else {
         const { error } = await supabase
           .from('saved_content')
@@ -113,8 +119,16 @@ export const PostDetails: React.FC = () => {
             post_id: id,
             type: type
           }]);
-        if (error) throw error;
+        if (error) {
+          if (error.code === '23505') { // Unique constraint violation
+            setIsSaved(true);
+            alert('This post was already saved.');
+            return;
+          }
+          throw error;
+        }
         setIsSaved(true);
+        alert('Post saved to your profile!');
       }
     } catch (error: any) {
       alert('Error saving post: ' + error.message);
