@@ -1125,7 +1125,7 @@ export default function App() {
       {!isAdmin && (
         <div className="max-w-7xl mx-auto px-6 mt-6 flex flex-wrap items-center justify-between gap-4">
           <div className="flex bg-white/5 p-1 rounded-2xl w-fit border border-white/10">
-            {user && (
+            {user && followingIds.length > 0 && (
               <button 
                 onClick={() => setActiveTab('following')}
                 className={cn(

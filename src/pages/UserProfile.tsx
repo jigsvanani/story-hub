@@ -10,6 +10,7 @@ import { StoryCard, WallpaperCard } from '../components/ContentCards';
 import { FollowButton } from '../components/FollowButton';
 import { FollowListModal } from '../components/FollowListModal';
 import { Category, Story, Reel, Wallpaper, Profile } from '../types';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const UserProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -174,13 +175,17 @@ export const UserProfile: React.FC = () => {
         </div>
 
         {/* Modal for Followers/Following */}
-        <FollowListModal 
-          isOpen={isFollowListOpen.isOpen}
-          onClose={() => setIsFollowListOpen({ ...isFollowListOpen, isOpen: false })}
-          userId={profile.id}
-          type={isFollowListOpen.type}
-          currentUserId={currentUser?.id}
-        />
+        <AnimatePresence>
+          {isFollowListOpen.isOpen && (
+            <FollowListModal 
+              isOpen={isFollowListOpen.isOpen}
+              onClose={() => setIsFollowListOpen({ ...isFollowListOpen, isOpen: false })}
+              userId={profile.id}
+              type={isFollowListOpen.type}
+              currentUserId={currentUser?.id}
+            />
+          )}
+        </AnimatePresence>
 
         {/* Content Tabs */}
         <div className="space-y-8">

@@ -34,22 +34,35 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const column = type === 'followers' ? 'follower_id' : 'following_id';
-      const oppositeColumn = type === 'followers' ? 'following_id' : 'follower_id';
+      const isFollowers = type === 'followers';
+      const selectColumn = isFollowers ? 'follower_id' : 'following_id';
+      const filterColumn = isFollowers ? 'following_id' : 'follower_id';
       
-      const { data, error } = await supabase
+      // Get the list of IDs from the follows table
+      const { data: followRows, error: followError } = await supabase
         .from('follows')
-        .select(`
-          profiles:${column}(*)
-        `)
-        .eq(oppositeColumn, userId);
+        .select(selectColumn)
+        .eq(filterColumn, userId);
 
-      if (data) {
-        const profileList = data.map((item: any) => item.profiles).filter(Boolean);
-        setUsers(profileList);
+      if (followError) throw followError;
+
+      if (followRows && followRows.length > 0) {
+        const userIds = followRows.map((row: any) => row[selectColumn]);
+        
+        // Fetch profiles for these IDs
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', userIds);
+
+        if (profileError) throw profileError;
+        setUsers(profileData || []);
+      } else {
+        setUsers([]);
       }
     } catch (err) {
       console.error('Error fetching follow list:', err);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -58,8 +71,6 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
   const filteredUsers = users.filter(user => 
     user.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
