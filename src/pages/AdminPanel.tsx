@@ -16,7 +16,7 @@ interface AdminPanelProps {
   fetchData: () => void;
 }
 
-
+export const AdminPanel: React.FC<AdminPanelProps> = ({
   user,
   isAdmin,
   handleAdminToggle,
