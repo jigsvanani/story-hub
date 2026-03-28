@@ -494,6 +494,7 @@ export default function App() {
   const [reels, setReels] = useState<Reel[]>([]);
   const [wallpapers, setWallpapers] = useState<Wallpaper[]>([]);
   const [allComments, setAllComments] = useState<any[]>([]);
+  const [allUsers, setAllUsers] = useState<Profile[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -503,6 +504,7 @@ export default function App() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editCategoryName, setEditCategoryName] = useState('');
   const [uploadStatus, setUploadStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState<{ type: 'category' | 'story' | 'reel' | 'wallpaper', id: string, extra?: string } | null>(null);
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadCaption, setUploadCaption] = useState('');
   const [uploadDescription, setUploadDescription] = useState('');
@@ -605,8 +607,17 @@ export default function App() {
   useEffect(() => {
     if (user?.email === 'jigs.vanani@gmail.com') {
       fetchAllComments();
+      fetchAllUsers();
     }
   }, [user]);
+
+  const fetchAllUsers = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (data) setAllUsers(data);
+  };
 
   const fetchAllComments = async () => {
     const { data } = await supabase
@@ -620,6 +631,42 @@ export default function App() {
     if (!confirm('Delete this comment permanentely?')) return;
     const { error } = await supabase.from('comments').delete().eq('id', id);
     if (!error) fetchAllComments();
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user and all their content? This cannot be undone.')) return;
+    
+    // Manual cascading delete
+    const tables = ['comments', 'stories', 'reels', 'wallpapers', 'profiles'];
+    for (const table of tables) {
+      const { error } = await supabase.from(table).delete().eq(table === 'profiles' ? 'id' : 'user_id', userId);
+      if (error) {
+        alert(`Error deleting from ${table}: ` + error.message);
+        return;
+      }
+    }
+    
+    alert('User and all associated content deleted successfully.');
+    fetchAllUsers();
+    fetchData(); 
+  };
+
+  const handleBlockUser = async (userId: string, hours: number | null) => {
+    const blocked_until = hours ? new Date(Date.now() + hours * 60 * 60 * 1000).toISOString() : null;
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({ 
+        is_blocked: hours !== 0,
+        blocked_until: hours === 0 ? null : blocked_until 
+      })
+      .eq('id', userId);
+
+    if (error) alert(error.message);
+    else {
+      fetchAllUsers();
+      fetchData();
+    }
   };
 
 
@@ -1005,28 +1052,41 @@ export default function App() {
 
 
 
-  const filteredStories = (selectedCategory && !isAdmin
-    ? stories.filter(s => s.category_id === selectedCategory)
-    : [
-        ...stories.map(s => ({ ...s, isReel: false })),
-        ...reels.map(r => ({ 
-          id: r.id, 
-          image_url: r.video_url, 
-          category_id: null, 
-          created_at: r.created_at,
-          isReel: true,
-          caption: r.caption,
-          music_name: r.music_name,
-          profiles: r.profiles,
-          user_id: r.user_id
-        }))
-      ].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
-  ).filter(item => !selectedUser || item.user_id === selectedUser);
+  // Filter content based on block status
+  const isUserBlocked = (profileId?: string) => {
+    if (!profileId) return false;
+    const profile = allUsers.find(u => u.id === profileId) || 
+                    stories.find(s => s.user_id === profileId)?.profiles ||
+                    wallpapers.find(w => w.user_id === profileId)?.profiles ||
+                    reels.find(r => r.user_id === profileId)?.profiles;
+    
+    if (!profile) return false;
+    if (profile.is_blocked) {
+      if (!profile.blocked_until) return true; // Permanent block
+      if (new Date(profile.blocked_until) > new Date()) return true; // Timed block active
+    }
+    return false;
+  };
 
-  const filteredWallpapers = (selectedCategory 
-    ? wallpapers.filter(w => w.category_id === selectedCategory)
-    : wallpapers
-  ).filter(w => !selectedUser || w.user_id === selectedUser);
+  const filteredStories = stories.filter(story => {
+    if (isUserBlocked(story.user_id)) return false;
+    if (selectedCategory && story.category_id !== selectedCategory) return false;
+    if (selectedUser && story.user_id !== selectedUser) return false;
+    return true;
+  });
+
+  const filteredReels = reels.filter(reel => {
+    if (isUserBlocked(reel.user_id)) return false;
+    if (selectedUser && reel.user_id !== selectedUser) return false;
+    return true;
+  });
+
+  const filteredWallpapers = wallpapers.filter(wallpaper => {
+    if (isUserBlocked(wallpaper.user_id)) return false;
+    if (selectedCategory && wallpaper.category_id !== selectedCategory) return false;
+    if (selectedUser && wallpaper.user_id !== selectedUser) return false;
+    return true;
+  });
 
   const activeCategories = categories.filter(cat => {
     if (activeTab === 'stories') {
@@ -1037,8 +1097,6 @@ export default function App() {
     }
     return false;
   });
-
-  const [showDeleteModal, setShowDeleteModal] = useState<{ type: 'category' | 'story' | 'reel' | 'wallpaper', id: string, extra?: string } | null>(null);
 
   const handleAdminToggle = () => {
     if (user?.email === 'jigs.vanani@gmail.com') {
@@ -1679,6 +1737,113 @@ export default function App() {
                     No comments to manage
                   </div>
                 )}
+              </div>
+            </section>
+
+            {/* Manage Users Section (Admin Only) */}
+            <section className="bg-white/5 border border-white/10 rounded-3xl p-8">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <UserIcon className="w-6 h-6 text-orange-500" />
+                  Manage Users
+                </h2>
+                <span className="bg-white/5 px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase border border-white/10 text-white/40">
+                  {allUsers.length} Total Users
+                </span>
+              </div>
+              
+              <div className="bg-black/40 border border-white/5 rounded-2xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-white/5 border-b border-white/10">
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-white/40">Profile</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-white/40">Join Date</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-white/40">Status</th>
+                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-white/40 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {allUsers.filter(u => u.username !== 'admin' && u.id !== user?.id).map(u => {
+                        const isBlocked = u.is_blocked && (!u.blocked_until || new Date(u.blocked_until) > new Date());
+                        
+                        return (
+                          <tr key={u.id} className="hover:bg-white/[0.02] transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 overflow-hidden">
+                                  {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" /> : <UserIcon className="w-full h-full p-2 text-white/20" />}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-bold">@{u.username}</p>
+                                  <p className="text-[10px] text-white/40">{u.id.slice(0, 8)}...</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                                <span className="text-xs text-white/60">{new Date(u.created_at).toLocaleDateString()}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                               {isBlocked ? (
+                                 <div className="flex flex-col">
+                                   <span className="text-[10px] font-black text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 w-fit uppercase">Blocked</span>
+                                   {u.blocked_until && (
+                                     <span className="text-[9px] text-white/20 mt-1">Until: {new Date(u.blocked_until).toLocaleString()}</span>
+                                   )}
+                                 </div>
+                               ) : (
+                                 <span className="text-[10px] font-black text-green-500 bg-green-500/10 px-2 py-0.5 rounded border border-green-500/20 w-fit uppercase">Active</span>
+                               )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                               <div className="flex items-center justify-end gap-2">
+                                 {isBlocked ? (
+                                   <button 
+                                      onClick={() => handleBlockUser(u.id, 0)}
+                                      className="px-3 py-1.5 bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white rounded-lg text-[10px] font-black uppercase transition-all"
+                                   >
+                                     Unblock
+                                   </button>
+                                 ) : (
+                                   <div className="flex gap-1">
+                                      <button 
+                                        onClick={() => handleBlockUser(u.id, 24)}
+                                        className="px-2 py-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg text-[9px] font-black uppercase transition-all"
+                                        title="Block for 1 Day"
+                                      >
+                                        1D
+                                      </button>
+                                      <button 
+                                        onClick={() => handleBlockUser(u.id, 48)}
+                                        className="px-2 py-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg text-[9px] font-black uppercase transition-all"
+                                        title="Block for 2 Days"
+                                      >
+                                        2D
+                                      </button>
+                                      <button 
+                                        onClick={() => handleBlockUser(u.id, null)}
+                                        className="px-2 py-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg text-[9px] font-black uppercase transition-all"
+                                        title="Block Permanently"
+                                      >
+                                        Perm
+                                      </button>
+                                   </div>
+                                 )}
+                                 <button 
+                                    onClick={() => handleDeleteUser(u.id)}
+                                    className="p-2 text-white/20 hover:text-rose-500 transition-colors"
+                                    title="Delete User"
+                                 >
+                                    <Trash2 className="w-4 h-4" />
+                                 </button>
+                               </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </section>
           </div>

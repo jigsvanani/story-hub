@@ -58,6 +58,16 @@ export const PostDetails: React.FC = () => {
       console.error(error);
       setError('Post not found.');
     } else {
+      // Check if author is blocked
+      const author = (data as any).profiles;
+      if (author?.is_blocked) {
+        const isCurrentlyBlocked = !author.blocked_until || new Date(author.blocked_until) > new Date();
+        if (isCurrentlyBlocked) {
+          setError('This content is currently unavailable.');
+          setLoading(false);
+          return;
+        }
+      }
       setPost(data);
     }
     setLoading(false);

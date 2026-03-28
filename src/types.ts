@@ -2,6 +2,8 @@ export interface Profile {
   id: string;
   username: string;
   avatar_url?: string;
+  is_blocked?: boolean;
+  blocked_until?: string | null;
   created_at: string;
 }
 
