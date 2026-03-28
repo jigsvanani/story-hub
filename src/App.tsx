@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './lib/supabase';
 import { Category, Story, Reel, Wallpaper, Profile, Comment } from './types';
+import { UserPanel } from './pages/UserPanel';
 import { cn } from './lib/utils';
 import { 
   Upload, 
@@ -1134,14 +1135,30 @@ export default function App() {
         window.location.href = '/admin';
       }
     } else {
-      // If not logged in or not admin, navigate home or open auth modal
+      // For ordinary users, navigate to '/user' panel
       if (!user) {
         setIsAuthModalOpen(true);
       } else {
-        alert("You do not have admin privileges.");
+        if (window.location.pathname === '/user') {
+          window.location.href = '/';
+        } else {
+          window.location.href = '/user';
+        }
       }
     }
   };
+
+  if (window.location.pathname === '/user') {
+    return (
+      <UserPanel 
+        user={user} 
+        stories={stories} 
+        reels={reels} 
+        wallpapers={wallpapers} 
+        fetchData={fetchData} 
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0F0F0F] text-white font-sans selection:bg-orange-500/30">
