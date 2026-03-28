@@ -162,25 +162,37 @@ export const UserPanel: React.FC<UserPanelProps> = ({
   const fetchSavedContent = async () => {
     if (!user) return;
     try {
-      const { data, error } = await supabase
+      // 1. Fetch the save associations
+      const { data: savedItems, error: savedError } = await supabase
         .from('saved_content')
-        .select(`
-          *,
-          stories:post_id (*),
-          reels:post_id (*),
-          wallpapers:post_id (*)
-        `)
+        .select('*')
         .eq('user_id', user.id);
       
-      if (error) throw error;
-      
-      // Filter so we only have the actual joined data per item
-      const formattedData = (data || []).map(item => {
-        if (item.type === 'stories') return { ...item, content: item.stories };
-        if (item.type === 'reels') return { ...item, content: item.reels };
-        if (item.type === 'wallpapers') return { ...item, content: item.wallpapers };
-        return item;
-      }).filter(item => item.content);
+      if (savedError) throw savedError;
+      if (!savedItems || savedItems.length === 0) {
+        setSavedContent([]);
+        return;
+      }
+
+      // 2. Separate by type and fetch details from respective tables
+      const storiesIds = savedItems.filter(i => i.type === 'stories').map(i => i.post_id);
+      const reelsIds = savedItems.filter(i => i.type === 'reels').map(i => i.post_id);
+      const wallpapersIds = savedItems.filter(i => i.type === 'wallpapers').map(i => i.post_id);
+
+      const [storiesRes, reelsRes, wallpapersRes] = await Promise.all([
+        storiesIds.length > 0 ? supabase.from('stories').select('*').in('id', storiesIds) : Promise.resolve({ data: [] }),
+        reelsIds.length > 0 ? supabase.from('reels').select('*').in('id', reelsIds) : Promise.resolve({ data: [] }),
+        wallpapersIds.length > 0 ? supabase.from('wallpapers').select('*').in('id', wallpapersIds) : Promise.resolve({ data: [] })
+      ]);
+
+      // 3. Map details back to the saved items
+      const formattedData = savedItems.map(item => {
+        let content = null;
+        if (item.type === 'stories') content = (storiesRes.data || []).find(s => s.id === item.post_id);
+        if (item.type === 'reels') content = (reelsRes.data || []).find(r => r.id === item.post_id);
+        if (item.type === 'wallpapers') content = (wallpapersRes.data || []).find(w => w.id === item.post_id);
+        return { ...item, content };
+      }).filter(item => item.content); // Only show if original content still exists
       
       setSavedContent(formattedData);
     } catch (error: any) {
