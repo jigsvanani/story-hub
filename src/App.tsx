@@ -1805,29 +1805,50 @@ export default function App() {
                                      Unblock
                                    </button>
                                  ) : (
-                                   <div className="flex gap-1">
-                                      <button 
-                                        onClick={() => handleBlockUser(u.id, 24)}
-                                        className="px-2 py-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg text-[9px] font-black uppercase transition-all"
-                                        title="Block for 1 Day"
-                                      >
-                                        1D
-                                      </button>
-                                      <button 
-                                        onClick={() => handleBlockUser(u.id, 48)}
-                                        className="px-2 py-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg text-[9px] font-black uppercase transition-all"
-                                        title="Block for 2 Days"
-                                      >
-                                        2D
-                                      </button>
-                                      <button 
-                                        onClick={() => handleBlockUser(u.id, null)}
-                                        className="px-2 py-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg text-[9px] font-black uppercase transition-all"
-                                        title="Block Permanently"
-                                      >
-                                        Perm
-                                      </button>
-                                   </div>
+                                    <div className="flex gap-1 flex-wrap justify-end max-w-[150px]">
+                                       <button 
+                                         onClick={() => handleBlockUser(u.id, 24)}
+                                         className="px-2 py-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg text-[9px] font-black uppercase transition-all"
+                                         title="Block for 1 Day"
+                                       >
+                                         1D
+                                       </button>
+                                       <button 
+                                         onClick={() => handleBlockUser(u.id, 48)}
+                                         className="px-2 py-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg text-[9px] font-black uppercase transition-all"
+                                         title="Block for 2 Days"
+                                       >
+                                         2D
+                                       </button>
+                                       <button 
+                                         onClick={() => handleBlockUser(u.id, 168)}
+                                         className="px-2 py-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg text-[9px] font-black uppercase transition-all"
+                                         title="Block for 7 Days"
+                                       >
+                                         7D
+                                       </button>
+                                       <button 
+                                         onClick={() => handleBlockUser(u.id, 360)}
+                                         className="px-2 py-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg text-[9px] font-black uppercase transition-all"
+                                         title="Block for 15 Days"
+                                       >
+                                         15D
+                                       </button>
+                                       <button 
+                                         onClick={() => handleBlockUser(u.id, 720)}
+                                         className="px-2 py-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg text-[9px] font-black uppercase transition-all"
+                                         title="Block for 30 Days"
+                                       >
+                                         30D
+                                       </button>
+                                       <button 
+                                         onClick={() => handleBlockUser(u.id, null)}
+                                         className="px-2 py-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-lg text-[9px] font-black uppercase transition-all"
+                                         title="Block Permanently"
+                                       >
+                                         Perm
+                                       </button>
+                                    </div>
                                  )}
                                  <button 
                                     onClick={() => handleDeleteUser(u.id)}
