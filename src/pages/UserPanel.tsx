@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Story, Reel, Wallpaper, Category } from '../types';
-import { ArrowLeft, Upload, Trash2, Image as ImageIcon, Video, Palette, Loader2 } from 'lucide-react';
+import { ArrowLeft, Upload, Trash2, Image as ImageIcon, Video, Palette, Loader2, MessageSquare, Send, User as UserIcon } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { Filter } from 'bad-words';
 
@@ -29,7 +29,10 @@ export const UserPanel: React.FC<UserPanelProps> = ({
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
-  const [activeTab, setActiveTab] = useState<'stories' | 'reels' | 'wallpapers'>('stories');
+  const [activeTab, setActiveTab] = useState<'stories' | 'reels' | 'wallpapers' | 'comments'>('stories');
+  const [userComments, setUserComments] = useState<any[]>([]);
+  const [replyToId, setReplyToId] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadCaption, setUploadCaption] = useState('');
   const [uploadDescription, setUploadDescription] = useState('');
@@ -158,6 +161,64 @@ export const UserPanel: React.FC<UserPanelProps> = ({
     }
   };
 
+  React.useEffect(() => {
+    if (user) {
+      fetchUserComments();
+    }
+  }, [user, stories, reels, wallpapers]);
+
+  const fetchUserComments = async () => {
+    if (!user) return;
+    const userPostIds = [
+      ...stories.filter(s => s.user_id === user.id).map(s => s.id),
+      ...reels.filter(r => r.user_id === user.id).map(r => r.id),
+      ...wallpapers.filter(w => w.user_id === user.id).map(w => w.id)
+    ];
+
+    if (userPostIds.length === 0) {
+      setUserComments([]);
+      return;
+    }
+
+    const { data } = await supabase
+      .from('comments')
+      .select('*, profiles(*)')
+      .in('post_id', userPostIds)
+      .order('created_at', { ascending: false });
+    
+    if (data) setUserComments(data);
+  };
+
+  const handleDeleteComment = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this comment?')) return;
+    const { error } = await supabase.from('comments').delete().eq('id', id);
+    if (error) alert(error.message);
+    else fetchUserComments();
+  };
+
+  const handleAddReply = async (e: React.FormEvent, parentId: string, postId: string) => {
+    e.preventDefault();
+    if (!replyContent.trim() || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .insert([{
+          post_id: postId,
+          user_id: user.id,
+          content: replyContent.trim(),
+          parent_id: parentId
+        }]);
+
+      if (error) throw error;
+      setReplyContent('');
+      setReplyToId(null);
+      fetchUserComments();
+    } catch (error: any) {
+      alert('Error adding reply: ' + error.message);
+    }
+  };
+
   const renderContentList = (content: any[], type: 'stories' | 'reels' | 'wallpapers') => {
     if (content.length === 0) {
       return (
@@ -202,6 +263,124 @@ export const UserPanel: React.FC<UserPanelProps> = ({
             </button>
           </div>
         ))}
+      </div>
+    );
+  };
+
+  const renderCommentsList = () => {
+    const parentComments = userComments.filter(c => !c.parent_id);
+    if (parentComments.length === 0) {
+      return (
+        <div className="text-center py-12 bg-white/5 rounded-2xl border border-dashed border-white/10">
+          <MessageSquare className="w-12 h-12 text-white/5 mx-auto mb-4" />
+          <p className="text-white/40 text-sm">No comments on your posts yet</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 no-scrollbar">
+        {parentComments.map((comment) => {
+          const post = stories.find(s => s.id === comment.post_id) || 
+                       reels.find(r => r.id === comment.post_id) || 
+                       wallpapers.find(w => w.id === comment.post_id);
+          
+          const replies = userComments.filter(r => r.parent_id === comment.id);
+
+          return (
+            <div key={comment.id} className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white/10 overflow-hidden flex-shrink-0">
+                    {comment.profiles?.avatar_url ? (
+                      <img src={comment.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                    ) : <UserIcon className="w-full h-full p-1.5 text-white/40" />}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                       <span className="text-sm font-bold text-white">@{comment.profiles?.username || 'user'}</span>
+                       <span className="text-[10px] text-white/20">{new Date(comment.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <p className="text-sm text-white/70">{comment.content}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] text-white/40 uppercase font-black tracking-widest bg-white/5 px-2 py-0.5 rounded">
+                        On: {post?.title || 'Untitled Post'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setReplyToId(replyToId === comment.id ? null : comment.id)}
+                    className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                    title="Reply"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteComment(comment.id)}
+                    className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Reply Input */}
+              {replyToId === comment.id && (
+                <form onSubmit={(e) => handleAddReply(e, comment.id, comment.post_id)} className="ml-11 mt-2 relative">
+                  <input 
+                    autoFocus
+                    type="text" 
+                    value={replyContent}
+                    onChange={(e) => setReplyContent(e.target.value)}
+                    placeholder="Write a reply..."
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <button 
+                    type="submit"
+                    disabled={!replyContent.trim()}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-blue-400 hover:text-blue-300 disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </form>
+              )}
+
+              {/* Replies */}
+              {replies.length > 0 && (
+                <div className="ml-11 space-y-3 pt-2 border-t border-white/5">
+                  {replies.map(reply => (
+                    <div key={reply.id} className="flex items-start justify-between group">
+                      <div className="flex gap-2">
+                        <div className="w-6 h-6 rounded-full bg-white/10 overflow-hidden flex-shrink-0">
+                          {reply.profiles?.avatar_url ? (
+                            <img src={reply.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : <UserIcon className="w-full h-full p-1 text-white/40" />}
+                        </div>
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-bold text-white">@{reply.profiles?.username || 'user'}</span>
+                            <span className="text-[9px] text-white/20">{new Date(reply.created_at).toLocaleDateString()}</span>
+                            {reply.user_id === user?.id && <span className="text-[8px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded-full font-bold uppercase">You</span>}
+                          </div>
+                          <p className="text-xs text-white/60">{reply.content}</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => handleDeleteComment(reply.id)}
+                        className="opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-300 transition-all"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -374,12 +553,23 @@ export const UserPanel: React.FC<UserPanelProps> = ({
             >
               Wallpapers ({userWallpapers.length})
             </button>
+            <button
+              onClick={() => setActiveTab('comments')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'comments'
+                  ? 'bg-green-500 text-white'
+                  : 'text-white/60 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              Comments ({userComments.length})
+            </button>
           </div>
 
           {/* Content Display */}
           {activeTab === 'stories' && renderContentList(userStories, 'stories')}
           {activeTab === 'reels' && renderContentList(userReels, 'reels')}
           {activeTab === 'wallpapers' && renderContentList(userWallpapers, 'wallpapers')}
+          {activeTab === 'comments' && renderCommentsList()}
         </div>
       </div>
     </div>
