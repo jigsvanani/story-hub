@@ -1073,6 +1073,7 @@ export default function App() {
         handleDeleteUser={handleDeleteUser}
         handleAddCategory={handleAddCategory}
         handleUpdateCategory={handleUpdateCategory}
+        handleDeleteCategory={handleDeleteCategory}
         deleteCommentAdmin={deleteCommentAdmin}
       />
     );
