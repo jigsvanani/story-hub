@@ -55,16 +55,13 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             <p className="text-white/60 text-center mb-6">Enter password to access</p>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-white/40 mb-2">Password</label>
+              <p className="block text-sm font-medium text-white/40 mb-2">Admin Access</p>
+              <p className="text-white/60 text-sm mb-4">Only jigs.vanani@gmail.com can access admin panel</p>
               <input
-                type="password"
-                value={adminPassword}
-                onChange={(e) => {
-                  setAdminPassword(e.target.value);
-                  setAuthError(null);
-                }}
-                onKeyPress={(e) => e.key === 'Enter' && handleUnlock()}
-                placeholder="Enter admin password"
+                type="email"
+                value={user?.email || ''}
+                readOnly
+                placeholder="Login with admin email"
                 className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-blue-500 transition-colors"
               />
             </div>
@@ -77,9 +74,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
             <button
               onClick={handleUnlock}
-              className="w-full px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors mb-4"
+              disabled={!user}
+              className="w-full px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-bold rounded-lg transition-colors mb-4"
             >
-              Unlock Admin Panel
+              {user ? 'Access Admin Panel' : 'Please Login First'}
             </button>
 
             <button
