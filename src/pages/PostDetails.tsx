@@ -96,7 +96,6 @@ export const PostDetails: React.FC = () => {
 
   const handleSaveToggle = async () => {
     if (!user) {
-      alert("Please login to save posts.");
       return;
     }
     if (isSaving) return;
@@ -110,7 +109,6 @@ export const PostDetails: React.FC = () => {
           .eq('post_id', id);
         if (error) throw error;
         setIsSaved(false);
-        alert('Post removed from saved content.');
       } else {
         const { error } = await supabase
           .from('saved_content')
@@ -122,16 +120,14 @@ export const PostDetails: React.FC = () => {
         if (error) {
           if (error.code === '23505') { // Unique constraint violation
             setIsSaved(true);
-            alert('This post was already saved.');
             return;
           }
           throw error;
         }
         setIsSaved(true);
-        alert('Post saved to your profile!');
       }
     } catch (error: any) {
-      alert('Error saving post: ' + error.message);
+      console.error('Error saving post:', error.message);
     } finally {
       setIsSaving(false);
     }
