@@ -63,3 +63,14 @@ export interface Comment {
   created_at: string;
   profiles?: Profile;
 }
+
+export interface SavedContent {
+  id: string;
+  user_id: string;
+  post_id: string;
+  type: 'stories' | 'reels' | 'wallpapers';
+  created_at: string;
+  stories?: Story;
+  reels?: Reel;
+  wallpapers?: Wallpaper;
+}

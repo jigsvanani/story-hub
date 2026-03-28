@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { cn } from '../lib/utils';
 import { Story, Reel, Wallpaper, Category, Profile } from '../types';
-import { ArrowLeft, Upload, Trash2, Image as ImageIcon, Video, Palette, Loader2, MessageSquare, Send, User as UserIcon, XCircle } from 'lucide-react';
+import { ArrowLeft, Upload, Trash2, Image as ImageIcon, Video, Palette, Loader2, MessageSquare, Send, User as UserIcon, XCircle, Bookmark, Download as DownloadIcon } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { Filter } from 'bad-words';
 
@@ -31,7 +32,8 @@ export const UserPanel: React.FC<UserPanelProps> = ({
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
-  const [activeTab, setActiveTab] = useState<'stories' | 'reels' | 'wallpapers' | 'comments'>('stories');
+  const [activeTab, setActiveTab] = useState<'stories' | 'reels' | 'wallpapers' | 'comments' | 'saved'>('stories');
+  const [savedContent, setSavedContent] = useState<any[]>([]);
   const [userComments, setUserComments] = useState<any[]>([]);
   const [replyToId, setReplyToId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
@@ -154,6 +156,67 @@ export const UserPanel: React.FC<UserPanelProps> = ({
       alert('Upload failed: ' + error.message);
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const fetchSavedContent = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('saved_content')
+        .select(`
+          *,
+          stories:post_id (*),
+          reels:post_id (*),
+          wallpapers:post_id (*)
+        `)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      // Filter so we only have the actual joined data per item
+      const formattedData = (data || []).map(item => {
+        if (item.type === 'stories') return { ...item, content: item.stories };
+        if (item.type === 'reels') return { ...item, content: item.reels };
+        if (item.type === 'wallpapers') return { ...item, content: item.wallpapers };
+        return item;
+      }).filter(item => item.content);
+      
+      setSavedContent(formattedData);
+    } catch (error: any) {
+      console.error('Error fetching saved content:', error.message);
+    }
+  };
+
+  const handleRemoveSaved = async (saveId: string) => {
+    try {
+      const { error } = await supabase
+        .from('saved_content')
+        .delete()
+        .eq('id', saveId);
+      if (error) throw error;
+      setSavedContent(prev => prev.filter(item => item.id !== saveId));
+    } catch (error: any) {
+      alert('Error removing saved item: ' + error.message);
+    }
+  };
+
+  const downloadFile = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      const extension = url.split('.').pop() || 'file';
+      link.download = `storyhub_${filename}.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download file.');
     }
   };
 
@@ -616,6 +679,19 @@ export const UserPanel: React.FC<UserPanelProps> = ({
             >
               Comments ({userComments.length})
             </button>
+            <button
+              onClick={() => {
+                setActiveTab('saved');
+                fetchSavedContent();
+              }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'saved'
+                  ? 'bg-rose-500 text-white'
+                  : 'text-white/60 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              Saved ({savedContent.length})
+            </button>
           </div>
 
           {/* Content Display */}
@@ -623,6 +699,61 @@ export const UserPanel: React.FC<UserPanelProps> = ({
           {activeTab === 'reels' && renderContentList(userReels, 'reels')}
           {activeTab === 'wallpapers' && renderContentList(userWallpapers, 'wallpapers')}
           {activeTab === 'comments' && renderCommentsList()}
+          {activeTab === 'saved' && (
+            <div className="space-y-12 py-6">
+              {['stories', 'reels', 'wallpapers'].map(type => {
+                const items = savedContent.filter(item => item.type === type);
+                if (items.length === 0) return null;
+
+                return (
+                  <div key={type} className="space-y-6">
+                    <h3 className="text-xl font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
+                      {type === 'stories' && <ImageIcon className="w-5 h-5 text-blue-400" />}
+                      {type === 'reels' && <Video className="w-5 h-5 text-purple-400" />}
+                      {type === 'wallpapers' && <Palette className="w-5 h-5 text-orange-400" />}
+                      Saved {type}
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                      {items.map(item => (
+                        <div key={item.id} className="relative aspect-[9/16] rounded-2xl overflow-hidden group bg-white/5 border border-white/10 shadow-2xl">
+                          {item.type === 'reels' ? (
+                            <video src={item.content.video_url} className="w-full h-full object-cover" />
+                          ) : (
+                            <img src={item.content.image_url} alt="" className="w-full h-full object-cover" />
+                          )}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 backdrop-blur-[2px]">
+                             <button 
+                               onClick={() => downloadFile(item.type === 'reels' ? item.content.video_url : item.content.image_url, item.content.id)}
+                               className="p-3 bg-white text-black rounded-full hover:scale-110 transition-transform shadow-xl"
+                               title="Download"
+                             >
+                               <DownloadIcon className="w-5 h-5" />
+                             </button>
+                             <button 
+                               onClick={() => handleRemoveSaved(item.id)}
+                               className="p-3 bg-rose-500 text-white rounded-full hover:scale-110 transition-transform shadow-xl"
+                               title="Remove"
+                             >
+                               <Trash2 className="w-5 h-5" />
+                             </button>
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+                            <p className="text-[10px] font-bold text-white truncate">{item.content.title || item.content.caption || 'Untitled'}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              {savedContent.length === 0 && (
+                <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/10">
+                  <Bookmark className="w-12 h-12 text-white/20 mx-auto mb-4" />
+                  <p className="text-white/40 font-bold italic">No saved content in your list yet.</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

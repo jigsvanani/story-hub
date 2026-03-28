@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { 
   Download, Instagram, Facebook, MessageCircle, X, Loader2, 
   User as UserIcon, MessageSquare, Send, Heart, Play, Video, 
-  Image as ImageIcon, Palette, Music
+  Image as ImageIcon, Palette, Music, Bookmark
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -25,6 +25,8 @@ export const PostDetails: React.FC = () => {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [replyToId, setReplyToId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
@@ -69,8 +71,56 @@ export const PostDetails: React.FC = () => {
         }
       }
       setPost(data);
+      if (user) {
+        checkIfSaved((data as any).id);
+      }
     }
     setLoading(false);
+  };
+
+  const checkIfSaved = async (postId: string) => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('saved_content')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('post_id', postId)
+      .single();
+    setIsSaved(!!data);
+  };
+
+  const handleSaveToggle = async () => {
+    if (!user) {
+      alert("Please login to save posts.");
+      return;
+    }
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      if (isSaved) {
+        const { error } = await supabase
+          .from('saved_content')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('post_id', id);
+        if (error) throw error;
+        setIsSaved(false);
+      } else {
+        const { error } = await supabase
+          .from('saved_content')
+          .insert([{
+            user_id: user.id,
+            post_id: id,
+            type: type
+          }]);
+        if (error) throw error;
+        setIsSaved(true);
+      }
+    } catch (error: any) {
+      alert('Error saving post: ' + error.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const fetchComments = async () => {
@@ -285,38 +335,57 @@ export const PostDetails: React.FC = () => {
             <div className="flex flex-col gap-3">
               {type === 'wallpapers' && (
                 <div className="flex gap-3 mb-2">
-                  <div className="flex-1 bg-white/5 py-3 rounded-xl flex items-center justify-center gap-2">
+                  <div className="flex-1 bg-white/5 py-3 rounded-xl flex items-center justify-center gap-2 border border-white/10">
                     <Heart className="w-4 h-4 text-rose-500" />
                     <span className="font-bold">{post.likes_count || 0}</span>
                   </div>
-                  <div className="flex-1 bg-white/5 py-3 rounded-xl flex items-center justify-center gap-2">
+                  <div className="flex-1 bg-white/5 py-3 rounded-xl flex items-center justify-center gap-2 border border-white/10">
                     <Download className="w-4 h-4 text-blue-500" />
                     <span className="font-bold">{post.downloads_count || 0}</span>
                   </div>
                 </div>
               )}
 
-              <button 
-                onClick={() => type === 'wallpapers' ? handleLikeWallpaper() : downloadImage(mediaUrl, post.id)}
-                className="w-full bg-white text-black py-4 rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-white/90 transition-all active:scale-95 shadow-xl shadow-white/5"
-              >
-                {type === 'wallpapers' ? (
-                  <>
-                    <Heart className={cn("w-5 h-5", isLiked ? "fill-black" : "")} />
-                    {isLiked ? 'LIKED' : 'LIKE WALLPAPER'}
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-5 h-5" />
-                    DOWNLOAD
-                  </>
-                )}
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => type === 'wallpapers' ? handleLikeWallpaper() : downloadImage(mediaUrl, post.id)}
+                  className="flex-1 px-8 py-4 bg-white text-black font-black rounded-2xl hover:bg-zinc-200 transition active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-white/5"
+                >
+                  {type === 'wallpapers' ? (
+                    <>
+                      <Heart className={cn("w-5 h-5", isLiked ? "fill-black" : "")} />
+                      {isLiked ? 'LIKED' : 'LIKE'}
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-5 h-5" />
+                      DOWNLOAD
+                    </>
+                  )}
+                </button>
+                <button 
+                  onClick={handleSaveToggle}
+                  disabled={isSaving}
+                  className={cn(
+                    "p-4 rounded-2xl transition-all active:scale-95 flex items-center justify-center border",
+                    isSaved 
+                    ? "bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20" 
+                    : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                  )}
+                  title={isSaved ? "Remove from saved" : "Save to profile"}
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Bookmark className={cn("w-5 h-5", isSaved && "fill-current")} />
+                  )}
+                </button>
+              </div>
 
               {type === 'wallpapers' && (
                 <button 
                    onClick={() => downloadImage(mediaUrl, post.id)}
-                   className="w-full bg-white/10 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-white/20 transition-all active:scale-95"
+                   className="w-full bg-white/10 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-white/20 transition-all active:scale-95 border border-white/10"
                  >
                    <Download className="w-5 h-5" />
                    DOWNLOAD WALLPAPER
@@ -344,7 +413,7 @@ export const PostDetails: React.FC = () => {
                 href={`https://wa.me/?text=${encodeURIComponent('Check out this post: ' + window.location.href)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full bg-[#25D366] text-white py-4 rounded-2xl font-black flex items-center justify-center gap-3 hover:opacity-90 transition-all active:scale-95 mt-2"
+                className="w-full bg-[#25D366] text-white py-4 rounded-2xl font-black flex items-center justify-center gap-3 hover:opacity-90 transition-all active:scale-95 mt-2 shadow-lg shadow-[#25D366]/10"
               >
                 <MessageCircle className="w-5 h-5" />
                 WHATSAPP SHARE
