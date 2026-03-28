@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { 
   Download, Instagram, Facebook, MessageCircle, X, Loader2, 
   User as UserIcon, MessageSquare, Send, Heart, Play, Video, 
-  Image as ImageIcon, Palette, Music, Bookmark
+  Image as ImageIcon, Palette, Music, Bookmark, Home
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -281,8 +281,12 @@ export const PostDetails: React.FC = () => {
     <div className="min-h-screen bg-[#0F0F0F] text-white">
       {/* Navbar/Header */}
       <nav className="sticky top-0 z-50 bg-[#0F0F0F]/80 backdrop-blur-xl border-b border-white/10 px-6 py-4 flex items-center justify-between">
-         <button onClick={() => navigate('/')} className="p-2 hover:bg-white/10 rounded-full transition">
-           <X className="w-6 h-6" />
+         <button 
+           onClick={() => navigate('/')} 
+           className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition flex items-center justify-center border border-white/10"
+           title="Go to Home"
+         >
+           <Home className="w-5 h-5 text-orange-500" />
          </button>
          <h1 className="font-bold tracking-tight">Post Details</h1>
          <div className="w-10"></div>

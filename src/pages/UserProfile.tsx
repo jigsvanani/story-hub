@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { 
   ArrowLeft, Loader2, Image as ImageIcon, Video, Palette, 
-  User as UserIcon, Calendar, Layers, Play
+  User as UserIcon, Calendar, Layers, Play, Home
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { StoryCard, WallpaperCard } from '../components/ContentCards';
@@ -110,6 +110,14 @@ export const UserProfile: React.FC = () => {
             <ArrowLeft className="w-6 h-6" />
           </button>
           <h1 className="font-bold tracking-tight">User Profile</h1>
+          <div className="flex-1"></div>
+          <button 
+            onClick={() => navigate('/')} 
+            className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition flex items-center justify-center border border-white/10"
+            title="Go to Home"
+          >
+            <Home className="w-5 h-5 text-orange-500" />
+          </button>
         </div>
       </nav>
 

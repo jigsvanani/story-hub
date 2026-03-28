@@ -327,6 +327,7 @@ const CommentSection = ({ postId, comments, onAddComment, isSubmitting }: any) =
 
 
 export default function App() {
+  const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -1060,11 +1061,14 @@ export default function App() {
 
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-[#0F0F0F]/80 backdrop-blur-xl border-b border-white/10 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
-            <ImageIcon className="text-white w-6 h-6" />
+        <div 
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 cursor-pointer group"
+        >
+          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
+            <Home className="text-white w-6 h-6" />
           </div>
-          <h1 className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">
+          <h1 className="text-xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60 group-hover:from-orange-500 group-hover:to-rose-600 transition-all">
             StoryHub
           </h1>
         </div>
