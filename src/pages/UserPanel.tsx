@@ -115,18 +115,29 @@ export const UserPanel: React.FC<UserPanelProps> = ({
 
       setUploadProgress('Saving to database...');
 
-      // Save to database
-      const tableName = type === 'reels' ? 'reels' : type;
+      // Prepare data based on content type
+      const insertData: any = {
+        user_id: user.id,
+      };
+
+      if (type === 'stories') {
+        insertData.title = uploadTitle.trim() || file.name.split('.')[0];
+        insertData.image_url = urlData.publicUrl;
+        insertData.category_id = selectedCategory;
+      } else if (type === 'reels') {
+        insertData.video_url = urlData.publicUrl;
+        insertData.caption = uploadCaption.trim() || uploadTitle.trim() || 'Untitled Reel';
+        insertData.music_name = 'Original Audio'; // Default music name
+      } else if (type === 'wallpapers') {
+        insertData.title = uploadTitle.trim() || file.name.split('.')[0];
+        insertData.image_url = urlData.publicUrl;
+        insertData.category_id = selectedCategory;
+        insertData.description = uploadDescription.trim() || null;
+      }
+
       const { error: dbError } = await supabase
-        .from(tableName)
-        .insert([{
-          user_id: user.id,
-          [type === 'stories' ? 'image_url' : type === 'reels' ? 'video_url' : 'image_url']: urlData.publicUrl,
-          title: uploadTitle.trim() || file.name.split('.')[0],
-          caption: uploadCaption.trim() || null,
-          description: uploadDescription.trim() || null,
-          category_id: (type === 'stories' || type === 'wallpapers') ? selectedCategory : null
-        }]);
+        .from(type === 'reels' ? 'reels' : type)
+        .insert([insertData]);
 
       if (dbError) throw dbError;
 
