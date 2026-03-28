@@ -1119,98 +1119,19 @@ export default function App() {
     return false;
   });
 
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState<{ type: 'category' | 'story' | 'reel' | 'wallpaper', id: string, extra?: string } | null>(null);
-  const [adminPassword, setAdminPassword] = useState('');
-  const [passwordError, setPasswordError] = useState(false);
 
   const handleAdminToggle = () => {
-    if (isAdmin) {
-      setIsAdmin(false);
+    if (user?.email === 'jigs.vanani@gmail.com') {
+      setIsAdmin(!isAdmin);
     } else {
-      setShowPasswordModal(true);
-      setAdminPassword('');
-      setPasswordError(false);
-    }
-  };
-
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (adminPassword === 'admin123') {
-      setIsAdmin(true);
-      setShowPasswordModal(false);
-      setAdminPassword('');
-      setPasswordError(false);
-    } else {
-      setPasswordError(true);
+      // Only jigs.vanani@gmail.com can access admin
+      alert('Access denied. Admin only.');
     }
   };
 
   return (
     <div className="min-h-screen bg-[#0F0F0F] text-white font-sans selection:bg-orange-500/30">
-      {/* Admin Password Modal */}
-      <AnimatePresence>
-        {showPasswordModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowPasswordModal(false)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-md bg-[#1A1A1A] border border-white/10 rounded-3xl p-8 shadow-2xl"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold flex items-center gap-2">
-                  <Settings className="w-6 h-6 text-orange-500" />
-                  Admin Access
-                </h2>
-                <button 
-                  onClick={() => setShowPasswordModal(false)}
-                  className="p-2 hover:bg-white/5 rounded-full transition-colors"
-                >
-                  <XCircle className="w-6 h-6 text-white/40" />
-                </button>
-              </div>
-              
-              <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-white/40 mb-2">Enter Admin Password</label>
-                  <input 
-                    type="password" 
-                    autoFocus
-                    value={adminPassword}
-                    onChange={(e) => {
-                      setAdminPassword(e.target.value);
-                      setPasswordError(false);
-                    }}
-                    placeholder="••••••••"
-                    className={cn(
-                      "w-full bg-black/40 border rounded-xl px-4 py-3 focus:outline-none transition-all",
-                      passwordError ? "border-red-500 focus:ring-2 focus:ring-red-500/50" : "border-white/10 focus:ring-2 focus:ring-orange-500/50"
-                    )}
-                  />
-                  {passwordError && (
-                    <p className="text-red-500 text-xs mt-2 font-medium">Incorrect password. Please try again.</p>
-                  )}
-                </div>
-                <button 
-                  type="submit"
-                  className="w-full bg-orange-500 hover:bg-orange-600 py-3 rounded-xl font-bold transition-all shadow-lg shadow-orange-500/20 active:scale-95"
-                >
-                  Unlock Admin Panel
-                </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {showDeleteModal && (
@@ -1292,7 +1213,14 @@ export default function App() {
           {user ? (
             <div className="flex items-center gap-3">
               <div className="hidden md:flex flex-col items-end">
-                <span className="text-xs font-black text-white">@{profile?.username || 'user'}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-white">@{profile?.username || 'user'}</span>
+                  {user?.email === 'jigs.vanani@gmail.com' && (
+                    <span className="px-2 py-0.5 bg-orange-500/20 border border-orange-500/30 rounded-full text-[10px] font-bold text-orange-400 uppercase tracking-wider">
+                      Admin
+                    </span>
+                  )}
+                </div>
                 <button 
                   onClick={() => supabase.auth.signOut()}
                   className="text-[10px] font-bold text-white/40 hover:text-rose-500 transition-colors flex items-center gap-1"
