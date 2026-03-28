@@ -1275,9 +1275,10 @@ export default function App() {
 
       {/* Tab Switcher */}
       {!isAdmin && (
-        <div className="max-w-7xl mx-auto px-6 mt-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex bg-white/5 p-1 rounded-2xl w-fit border border-white/10">
-            {user && followingIds.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 mt-6">
+          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 overflow-x-auto no-scrollbar scroll-smooth">
+            <div className="flex items-center gap-1 min-w-max">
+              {user && followingIds.length > 0 && (
               <button 
                 onClick={() => setActiveTab('following')}
                 className={cn(
@@ -1319,15 +1320,16 @@ export default function App() {
               <Palette className="w-4 h-4" />
               Wallpapers
             </button>
+            </div>
           </div>
 
           {selectedUser && (
             <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-3 bg-orange-500/10 border border-orange-500/20 px-4 py-2 rounded-2xl"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4 flex items-center justify-between gap-3 bg-orange-500/10 border border-orange-500/20 px-4 py-3 rounded-2xl"
             >
-              <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">
+              <span className="text-xs font-bold text-orange-500 uppercase tracking-widest truncate">
                 Viewing @{stories.find(s => s.user_id === selectedUser)?.profiles?.username || 
                           wallpapers.find(w => w.user_id === selectedUser)?.profiles?.username || 
                           reels.find(r => r.user_id === selectedUser)?.profiles?.username || 
@@ -1335,9 +1337,9 @@ export default function App() {
               </span>
               <button 
                 onClick={() => setSelectedUser(null)}
-                className="p-1 hover:bg-orange-500/20 rounded-full transition-colors"
+                className="p-1 px-3 bg-orange-500 text-white rounded-xl text-[10px] font-black uppercase transition-colors"
               >
-                <X className="w-4 h-4 text-orange-500" />
+                Clear
               </button>
             </motion.div>
           )}
