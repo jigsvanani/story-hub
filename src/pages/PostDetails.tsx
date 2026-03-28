@@ -319,7 +319,7 @@ export const PostDetails: React.FC = () => {
             {/* Author Info */}
             {post.profiles && (
               <div 
-                onClick={() => navigate(`/profile/${post.user_id}`)}
+                onClick={() => navigate(`/profile/${post.profiles.id}`)}
                 className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors group"
               >
                 <div className="w-12 h-12 rounded-full bg-white/10 overflow-hidden border border-white/10 group-hover:border-white/30 transition-colors">
@@ -547,7 +547,10 @@ export const PostDetails: React.FC = () => {
                           <div className="ml-10 space-y-4 border-l border-white/5 pl-4">
                             {comments.filter(r => r.parent_id === comment.id).map((reply: any) => (
                               <div key={reply.id} className="flex gap-3 group">
-                                <div className="w-6 h-6 rounded-full bg-white/5 border border-white/10 overflow-hidden flex-shrink-0">
+                                <div 
+                                  onClick={() => navigate(`/profile/${reply.user_id}`)}
+                                  className="w-6 h-6 rounded-full bg-white/5 border border-white/10 overflow-hidden flex-shrink-0 cursor-pointer hover:border-white/30 transition-all"
+                                >
                                   {reply.profiles?.avatar_url ? (
                                     <img src={reply.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
                                   ) : (
@@ -557,7 +560,12 @@ export const PostDetails: React.FC = () => {
                                 <div className="flex-1 space-y-1">
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                      <span className="text-[11px] font-black text-white">@{reply.profiles?.username || 'user'}</span>
+                                      <span 
+                                        onClick={() => navigate(`/profile/${reply.user_id}`)}
+                                        className="text-[11px] font-black text-white cursor-pointer hover:text-orange-500 transition-colors"
+                                      >
+                                        @{reply.profiles?.username || 'user'}
+                                      </span>
                                       <span className="text-[9px] text-white/20">{new Date(reply.created_at).toLocaleDateString()}</span>
                                       {reply.user_id === post.user_id && (
                                         <span className="text-[8px] bg-orange-500/10 text-orange-500 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider border border-orange-500/20">Author</span>
@@ -646,7 +654,15 @@ export const PostDetails: React.FC = () => {
               
               {/* Simple Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
-                <p className="text-[10px] font-black text-white/70 truncate">@{item.profiles?.username || 'user'}</p>
+                <p 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (item.profiles?.id) navigate(`/profile/${item.profiles.id}`);
+                  }}
+                  className="text-[10px] font-black text-white/70 hover:text-white transition-colors cursor-pointer inline-block w-fit"
+                >
+                  @{item.profiles?.username || 'user'}
+                </p>
                 {item.title && <h4 className="text-xs font-bold text-white truncate">{item.title}</h4>}
               </div>
 
