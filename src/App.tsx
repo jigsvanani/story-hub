@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { Category, Story, Reel, Wallpaper, Profile, Comment } from './types';
 import { UserPanel } from './pages/UserPanel';
@@ -323,7 +324,8 @@ const CommentSection = ({ postId, comments, onAddComment, isSubmitting }: any) =
   );
 };
 
-const StoryCard = ({ story, categories, onClick, setSelectedUser }: any) => {
+const StoryCard = ({ story, categories, setSelectedUser }: any) => {
+  const navigate = useNavigate();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -349,7 +351,7 @@ const StoryCard = ({ story, categories, onClick, setSelectedUser }: any) => {
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       className="group relative break-inside-avoid mb-4 rounded-[1.5rem] overflow-hidden bg-white/5 border border-white/10 shadow-2xl cursor-pointer"
-      onClick={() => onClick(story)}
+      onClick={() => navigate(`/post/${story.isReel ? 'reels' : 'stories'}/${story.id}`)}
     >
       {story.isReel ? (
         <>
@@ -421,7 +423,8 @@ const StoryCard = ({ story, categories, onClick, setSelectedUser }: any) => {
   );
 };
 
-const WallpaperCard = ({ wallpaper, categories, onClick, setSelectedUser }: any) => {
+const WallpaperCard = ({ wallpaper, categories, setSelectedUser }: any) => {
+  const navigate = useNavigate();
   const [isLiked, setIsLiked] = useState(false);
 
   return (
@@ -430,7 +433,7 @@ const WallpaperCard = ({ wallpaper, categories, onClick, setSelectedUser }: any)
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       className="group relative break-inside-avoid mb-4 rounded-[1.5rem] overflow-hidden bg-white/5 border border-white/10 shadow-2xl cursor-pointer"
-      onClick={() => onClick(wallpaper)}
+      onClick={() => navigate(`/post/wallpapers/${wallpaper.id}`)}
     >
       <img 
         src={wallpaper.image_url} 
@@ -492,8 +495,6 @@ export default function App() {
   const [wallpapers, setWallpapers] = useState<Wallpaper[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [selectedWallpaper, setSelectedWallpaper] = useState<Wallpaper | null>(null);
-  const [selectedStory, setSelectedStory] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -504,9 +505,6 @@ export default function App() {
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadCaption, setUploadCaption] = useState('');
   const [uploadDescription, setUploadDescription] = useState('');
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState('');
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const reelInputRef = useRef<HTMLInputElement>(null);
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
@@ -603,47 +601,6 @@ export default function App() {
     }
   };
 
-  const fetchComments = async (postId: string) => {
-    const { data, error } = await supabase
-      .from('comments')
-      .select('*, profiles(*)')
-      .eq('post_id', postId)
-      .order('created_at', { ascending: false });
-    
-    if (data) setComments(data);
-  };
-
-  const handleAddComment = async (postId: string) => {
-    if (!user) {
-      setIsAuthModalOpen(true);
-      return;
-    }
-    if (!newComment.trim()) return;
-
-    if (filter.isProfane(newComment)) {
-      setUploadStatus({ type: 'error', message: 'Please avoid using swear words in comments.' });
-      return;
-    }
-
-    setIsSubmittingComment(true);
-    try {
-      const { error } = await supabase
-        .from('comments')
-        .insert([{
-          post_id: postId,
-          user_id: user.id,
-          content: newComment.trim()
-        }]);
-      
-      if (error) throw error;
-      setNewComment('');
-      fetchComments(postId);
-    } catch (error: any) {
-      console.error('Error adding comment:', error);
-    } finally {
-      setIsSubmittingComment(false);
-    }
-  };
 
   const checkNudity = async (file: File): Promise<boolean> => {
     try {
@@ -1025,72 +982,7 @@ export default function App() {
     }
   };
 
-  const handleDownloadWallpaper = async (id: string) => {
-    if (id.startsWith('30000000')) return;
-    const wallpaper = wallpapers.find(w => w.id === id);
-    if (!wallpaper) return;
-    try {
-      const newCount = (wallpaper.downloads_count || 0) + 1;
-      await supabase.from('wallpapers').update({ downloads_count: newCount }).eq('id', id);
-      if (selectedWallpaper?.id === id) {
-        setSelectedWallpaper({ ...selectedWallpaper, downloads_count: newCount });
-      }
-      fetchData();
-    } catch (error) {
-      console.error('Error incrementing download count:', error);
-    }
-  };
 
-  const handleLikeWallpaper = async (id: string) => {
-    if (id.startsWith('30000000')) return;
-    const wallpaper = wallpapers.find(w => w.id === id);
-    if (!wallpaper) return;
-    try {
-      const newCount = (wallpaper.likes_count || 0) + 1;
-      await supabase.from('wallpapers').update({ likes_count: newCount }).eq('id', id);
-      if (selectedWallpaper?.id === id) {
-        setSelectedWallpaper({ ...selectedWallpaper, likes_count: newCount });
-      }
-      fetchData();
-    } catch (error) {
-      console.error('Error liking wallpaper:', error);
-    }
-  };
-
-  useEffect(() => {
-    if (selectedStory) {
-      fetchComments(selectedStory.id);
-    } else if (selectedWallpaper) {
-      fetchComments(selectedWallpaper.id);
-    } else {
-      setComments([]);
-    }
-  }, [selectedStory, selectedWallpaper]);
-
-  const downloadImage = async (url: string, name: string, isWallpaper = false) => {
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      
-      // Determine extension from URL or MIME type
-      const extension = url.match(/\.(mp4|webm|ogg|mov)$|video/i) ? 'mp4' : 'jpg';
-      link.download = `storyhub-${name}.${extension}`;
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-
-      if (isWallpaper) {
-        handleDownloadWallpaper(name);
-      }
-    } catch (error) {
-      console.error('Error downloading content:', error);
-    }
-  };
 
   const filteredStories = (selectedCategory && !isAdmin
     ? stories.filter(s => s.category_id === selectedCategory)
@@ -1755,7 +1647,6 @@ export default function App() {
                     key={story.id}
                     story={story}
                     categories={categories}
-                    onClick={setSelectedStory}
                     setSelectedUser={setSelectedUser}
                   />
                 ))}
@@ -1827,9 +1718,6 @@ export default function App() {
                     key={wallpaper.id}
                     wallpaper={wallpaper}
                     categories={categories}
-                    downloadImage={downloadImage}
-                    handleLikeWallpaper={handleLikeWallpaper}
-                    onClick={setSelectedWallpaper}
                     setSelectedUser={setSelectedUser}
                   />
                 ))}
@@ -1909,344 +1797,6 @@ export default function App() {
           </div>
         )}
       </main>
-
-      {/* Story Detail Modal */}
-      <AnimatePresence>
-        {selectedStory && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl overflow-y-auto"
-          >
-            <div className="min-h-screen flex flex-col lg:flex-row lg:flex-wrap">
-              {/* Close Button */}
-              <button 
-                onClick={() => setSelectedStory(null)}
-                className="fixed top-6 right-6 z-[110] p-3 bg-white/10 hover:bg-white/20 rounded-full border border-white/10 transition-all active:scale-90"
-              >
-                <X className="w-6 h-6 text-white" />
-              </button>
-
-              {/* Main Media View */}
-              <div className="flex-1 flex items-center justify-center p-6 lg:p-12 min-h-[50vh] lg:min-h-0">
-                <motion.div 
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="relative max-w-full max-h-[85vh] rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 bg-black"
-                >
-                  {selectedStory.isReel ? (
-                    <video 
-                      src={selectedStory.image_url} 
-                      className="max-w-full max-h-[85vh] object-contain"
-                      loop
-                      autoPlay
-                      controls
-                    />
-                  ) : (
-                    <img 
-                      src={selectedStory.image_url} 
-                      alt="Story Detail"
-                      className="max-w-full max-h-[85vh] object-contain"
-                      referrerPolicy="no-referrer"
-                    />
-                  )}
-                </motion.div>
-              </div>
-
-              {/* Sidebar: Details & Actions */}
-              <div className="w-full lg:w-[400px] bg-white/5 border-l border-white/10 p-8 space-y-8 lg:sticky lg:top-0 lg:h-screen overflow-y-auto">
-                <div className="space-y-6">
-                  {/* Author Info */}
-                  {selectedStory.profiles && (
-                    <div 
-                      className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all"
-                      onClick={() => { setSelectedUser(selectedStory.user_id); setSelectedStory(null); }}
-                    >
-                      <div className="w-12 h-12 rounded-full bg-white/10 overflow-hidden border border-white/10">
-                        {selectedStory.profiles.avatar_url ? (
-                          <img src={selectedStory.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <UserIcon className="w-full h-full p-2 text-white/50" />
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="font-black text-white">@{selectedStory.profiles.username}</h4>
-                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">View Profile</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <span className="px-3 py-1 bg-orange-500/20 text-orange-500 rounded-full text-xs font-bold uppercase tracking-widest border border-orange-500/20">
-                      {selectedStory.isReel ? 'Reel' : (categories.find((c: any) => c.id === selectedStory.category_id)?.name || 'Story')}
-                    </span>
-                    <h2 className="text-3xl font-black mt-4 tracking-tight">
-                      {selectedStory.title || (selectedStory.isReel ? 'Reel Details' : 'Story Details')}
-                    </h2>
-                    {selectedStory.caption && (
-                      <p className="text-orange-500 font-bold mt-2">"{selectedStory.caption}"</p>
-                    )}
-                    {selectedStory.description && (
-                      <p className="text-white/60 mt-4 text-sm leading-relaxed">{selectedStory.description}</p>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-3">
-                    <button 
-                      onClick={() => downloadImage(selectedStory.image_url, selectedStory.id)}
-                      className="w-full bg-white text-black py-5 rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-white/90 transition-all active:scale-95 shadow-xl shadow-white/5"
-                    >
-                      <Download className="w-6 h-6" />
-                      DOWNLOAD
-                    </button>
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                      <button 
-                        onClick={() => handleSocialShare('instagram', selectedStory.image_url)}
-                        className="bg-[#E1306C] py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-95"
-                      >
-                        <Instagram className="w-5 h-5" />
-                        Insta
-                      </button>
-                      <button 
-                        onClick={() => handleSocialShare('facebook', selectedStory.image_url)}
-                        className="bg-[#1877F2] py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-95"
-                      >
-                        <Facebook className="w-5 h-5" />
-                        FB
-                      </button>
-                    </div>
-
-                    <a 
-                      href={`https://wa.me/?text=${encodeURIComponent('Check out this story: ' + selectedStory.image_url)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full bg-[#25D366] text-white py-5 rounded-2xl font-black flex items-center justify-center gap-3 hover:opacity-90 transition-all active:scale-95 shadow-xl shadow-green-500/20"
-                    >
-                      <MessageCircle className="w-6 h-6" />
-                      WHATSAPP SHARE
-                    </a>
-                  </div>
-                </div>
-
-                <div className="pt-8 border-t border-white/10">
-                  <CommentSection 
-                    postId={selectedStory.id}
-                    comments={comments}
-                    onAddComment={handleAddComment}
-                    isSubmitting={isSubmittingComment}
-                  />
-                </div>
-              </div>
-
-              {/* Suggested Stories - Moved Below Sidebar in DOM */}
-              <div className="w-full p-8 border-t border-white/10 bg-black/20">
-                <div className="max-w-7xl mx-auto space-y-6">
-                  <h3 className="text-xl font-bold text-white/60 flex items-center gap-2">
-                    <ImageIcon className="w-6 h-6 text-orange-500" />
-                    More Stories & Reels
-                  </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
-                    {filteredStories
-                      .filter(s => s.id !== selectedStory.id)
-                      .slice(0, 6)
-                      .map(suggestion => (
-                        <motion.div 
-                          key={suggestion.id}
-                          whileHover={{ scale: 1.05 }}
-                          className="aspect-[9/16] rounded-2xl overflow-hidden border border-white/10 cursor-pointer bg-black shadow-lg"
-                          onClick={() => {
-                            setSelectedStory(suggestion);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                        >
-                          {suggestion.isReel ? (
-                            <video src={suggestion.image_url} className="w-full h-full object-cover" />
-                          ) : (
-                            <img 
-                              src={suggestion.image_url} 
-                              className="w-full h-full object-cover"
-                              alt="Suggested"
-                              referrerPolicy="no-referrer"
-                            />
-                          )}
-                        </motion.div>
-                      ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Wallpaper Detail Modal */}
-      <AnimatePresence>
-        {selectedWallpaper && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl overflow-y-auto"
-          >
-            <div className="min-h-screen flex flex-col lg:flex-row lg:flex-wrap">
-              {/* Close Button */}
-              <button 
-                onClick={() => setSelectedWallpaper(null)}
-                className="fixed top-6 right-6 z-[110] p-3 bg-white/10 hover:bg-white/20 rounded-full border border-white/10 transition-all active:scale-90"
-              >
-                <X className="w-6 h-6 text-white" />
-              </button>
-
-              {/* Main Image View */}
-              <div className="flex-1 flex items-center justify-center p-6 lg:p-12 min-h-[50vh] lg:min-h-0">
-                <motion.div 
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  className="relative max-w-full max-h-[85vh] rounded-[2rem] overflow-hidden shadow-2xl border border-white/10"
-                >
-                  <img 
-                    src={selectedWallpaper.image_url} 
-                    alt="Wallpaper Detail"
-                    className="max-w-full max-h-[85vh] object-contain"
-                    referrerPolicy="no-referrer"
-                  />
-                  
-                  {/* Actions Overlay on Mobile */}
-                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-4 lg:hidden">
-                    <button 
-                      onClick={() => downloadImage(selectedWallpaper.image_url, selectedWallpaper.id, true)}
-                      className="bg-white text-black px-8 py-4 rounded-2xl font-bold flex items-center gap-2 shadow-2xl active:scale-95 transition-transform"
-                    >
-                      <Download className="w-5 h-5" />
-                      Download
-                    </button>
-                    <button 
-                      onClick={() => handleLikeWallpaper(selectedWallpaper.id)}
-                      className="bg-rose-500 text-white p-4 rounded-2xl shadow-2xl active:scale-95 transition-transform"
-                    >
-                      <Heart className="w-6 h-6 fill-current" />
-                    </button>
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* Sidebar: Details & Suggestions */}
-              <div className="w-full lg:w-[400px] bg-white/5 border-l border-white/10 p-8 space-y-8 lg:sticky lg:top-0 lg:h-screen overflow-y-auto">
-                <div className="space-y-6">
-                  {/* Author Info */}
-                  {selectedWallpaper.profiles && (
-                    <div 
-                      className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10 cursor-pointer hover:bg-white/10 transition-all"
-                      onClick={() => { setSelectedUser(selectedWallpaper.user_id); setSelectedWallpaper(null); }}
-                    >
-                      <div className="w-12 h-12 rounded-full bg-white/10 overflow-hidden border border-white/10">
-                        {selectedWallpaper.profiles.avatar_url ? (
-                          <img src={selectedWallpaper.profiles.avatar_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <UserIcon className="w-full h-full p-2 text-white/50" />
-                        )}
-                      </div>
-                      <div>
-                        <h4 className="font-black text-white">@{selectedWallpaper.profiles.username}</h4>
-                        <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">View Profile</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <span className="px-3 py-1 bg-orange-500/20 text-orange-500 rounded-full text-xs font-bold uppercase tracking-widest border border-orange-500/20">
-                      {categories.find((c: any) => c.id === selectedWallpaper.category_id)?.name || 'Wallpaper'}
-                    </span>
-                    <h2 className="text-3xl font-black mt-4 tracking-tight">
-                      {selectedWallpaper.title || 'Wallpaper Details'}
-                    </h2>
-                    {selectedWallpaper.caption && (
-                      <p className="text-orange-500 font-bold mt-2">"{selectedWallpaper.caption}"</p>
-                    )}
-                    {selectedWallpaper.description && (
-                      <p className="text-white/60 mt-4 text-sm leading-relaxed">{selectedWallpaper.description}</p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/10 flex flex-col items-center justify-center gap-1">
-                      <Heart className="w-6 h-6 text-rose-500 fill-rose-500" />
-                      <span className="text-xl font-black">{selectedWallpaper.likes_count}</span>
-                      <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest">Total Likes</span>
-                    </div>
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/10 flex flex-col items-center justify-center gap-1">
-                      <Download className="w-6 h-6 text-blue-500" />
-                      <span className="text-xl font-black">{selectedWallpaper.downloads_count}</span>
-                      <span className="text-[10px] text-white/40 uppercase font-bold tracking-widest">Downloads</span>
-                    </div>
-                  </div>
-
-                  <div className="hidden lg:flex flex-col gap-3">
-                    <button 
-                      onClick={() => downloadImage(selectedWallpaper.image_url, selectedWallpaper.id, true)}
-                      className="w-full bg-white text-black py-5 rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-white/90 transition-all active:scale-95 shadow-xl shadow-white/5"
-                    >
-                      <Download className="w-6 h-6" />
-                      DOWNLOAD 4K
-                    </button>
-                    <button 
-                      onClick={() => handleLikeWallpaper(selectedWallpaper.id)}
-                      className="w-full bg-rose-500 text-white py-5 rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-rose-600 transition-all active:scale-95 shadow-xl shadow-rose-500/20"
-                    >
-                      <Heart className="w-6 h-6 fill-current" />
-                      LIKE WALLPAPER
-                    </button>
-                  </div>
-                </div>
-
-                <div className="pt-8 border-t border-white/10">
-                  <CommentSection 
-                    postId={selectedWallpaper.id}
-                    comments={comments}
-                    onAddComment={handleAddComment}
-                    isSubmitting={isSubmittingComment}
-                  />
-                </div>
-              </div>
-
-              {/* Suggested Wallpapers - Moved Below Sidebar in DOM */}
-              <div className="w-full p-8 border-t border-white/10 bg-black/20">
-                <div className="max-w-7xl mx-auto space-y-6">
-                  <h3 className="text-xl font-bold text-white/60 flex items-center gap-2">
-                    <Palette className="w-6 h-6 text-orange-500" />
-                    Suggested Wallpapers
-                  </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
-                    {wallpapers
-                      .filter(w => w.category_id === selectedWallpaper.category_id && w.id !== selectedWallpaper.id)
-                      .slice(0, 6)
-                      .map(suggestion => (
-                        <motion.div 
-                          key={suggestion.id}
-                          whileHover={{ scale: 1.05 }}
-                          className="aspect-[9/16] rounded-2xl overflow-hidden border border-white/10 cursor-pointer shadow-lg"
-                          onClick={() => {
-                            setSelectedWallpaper(suggestion);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                        >
-                          <img 
-                            src={suggestion.image_url} 
-                            className="w-full h-full object-cover"
-                            alt="Suggested"
-                            referrerPolicy="no-referrer"
-                          />
-                        </motion.div>
-                      ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Footer */}
       <footer className="border-t border-white/10 mt-20 py-12 px-6 text-center">
