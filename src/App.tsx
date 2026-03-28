@@ -1126,87 +1126,102 @@ export default function App() {
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>      {/* Navigation */}
+      <nav className="sticky top-0 z-50 bg-[#0F0F0F]/80 backdrop-blur-xl border-b border-white/10 px-4 sm:px-6 py-3 sm:py-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center gap-4 sm:justify-between">
+          <div className="flex items-center justify-between w-full sm:w-auto">
+            <div 
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 cursor-pointer group shrink-0"
+            >
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
+                <Home className="text-white w-6 h-6" />
+              </div>
+              <h1 className="text-xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60 group-hover:from-orange-500 group-hover:to-rose-600 transition-all">
+                StoryHub
+              </h1>
+            </div>
 
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-[#0F0F0F]/80 backdrop-blur-xl border-b border-white/10 px-6 py-4 flex items-center justify-between">
-        <div 
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2 cursor-pointer group shrink-0"
-        >
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
-            <Home className="text-white w-6 h-6" />
+            <div className="flex items-center gap-3 sm:hidden">
+               {user ? (
+                <button 
+                  onClick={() => navigate(`/profile/${user.id}`)}
+                  className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-white/5 active:scale-95 transition-all"
+                >
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <UserIcon className="w-full h-full p-2 text-white/40" />
+                  )}
+                </button>
+              ) : (
+                <button 
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="px-4 py-2 bg-white text-black text-xs font-black rounded-full active:scale-95 transition-all"
+                >
+                  LOGIN
+                </button>
+              )}
+            </div>
           </div>
-          <h1 className="text-xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60 group-hover:from-orange-500 group-hover:to-rose-600 transition-all hidden sm:block">
-            StoryHub
-          </h1>
-        </div>
 
-        {/* Global Search Bar */}
-        {!isAdmin && (
-          <div className="flex-1 max-w-md mx-4 relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-orange-500 transition-colors" />
-            <input 
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by title..."
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-2.5 pl-11 pr-4 text-sm text-white focus:outline-none focus:border-white/20 focus:ring-4 focus:ring-orange-500/10 transition-all font-medium"
-            />
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-all"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-          </div>
-        )}
-        
-        <div className="flex items-center gap-4">
-          {user ? (
-            <div className="flex items-center gap-3">
-              <div className="hidden md:flex flex-col items-end">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-white">@{profile?.username || 'user'}</span>
-                  {user?.email === 'jigs.vanani@gmail.com' && (
-                    <span className="px-2 py-0.5 bg-orange-500/20 border border-orange-500/30 rounded-full text-[10px] font-bold text-orange-400 uppercase tracking-wider">
-                      Admin
+          {/* Global Search Bar */}
+          {!isAdmin && (
+            <div className="w-full sm:flex-1 sm:max-w-md relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-orange-500 transition-colors" />
+              <input 
+                type="text"
+                placeholder="Search by title..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-12 focus:outline-none focus:ring-2 focus:ring-orange-500/50 transition-all text-sm group-hover:bg-white/10"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-full transition-colors"
+                >
+                  <X className="w-3 h-3 text-white/40 hover:text-white" />
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Desktop Auth/Profile */}
+          <div className="hidden sm:flex items-center gap-4">
+             {user ? (
+                <div className="flex items-center gap-4">
+                  {isAdmin && (
+                    <span className="bg-orange-500/10 text-orange-500 text-[10px] font-black px-2 py-1 rounded border border-orange-500/20 uppercase tracking-widest">
+                      Admin Mode
                     </span>
                   )}
+                  <button 
+                    onClick={() => navigate(`/profile/${user.id}`)}
+                    className="flex items-center gap-2 group/profile"
+                  >
+                    <div className="text-right">
+                       <p className="text-[10px] font-black text-white/40 group-hover:text-orange-500 transition-colors uppercase tracking-widest">Profile</p>
+                       <p className="text-xs font-bold truncate max-w-[100px]">@{profile?.username || 'user'}</p>
+                    </div>
+                    <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-white/5 group-hover:border-orange-500/50 transition-all">
+                      {profile?.avatar_url ? (
+                        <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <UserIcon className="w-full h-full p-2 text-white/40" />
+                      )}
+                    </div>
+                  </button>
                 </div>
+              ) : (
                 <button 
-                  onClick={() => supabase.auth.signOut()}
-                  className="text-[10px] font-bold text-white/40 hover:text-rose-500 transition-colors flex items-center gap-1"
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="px-6 py-2.5 bg-white text-black font-black rounded-full hover:bg-orange-500 hover:text-white transition-all active:scale-95 shadow-lg shadow-white/5"
                 >
-                  <LogOut className="w-3 h-3" />
-                  Logout
+                  LOGIN
                 </button>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 overflow-hidden">
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <UserIcon className="w-full h-full p-2 text-white/50" />
-                )}
-              </div>
-            </div>
-          ) : (
-            <button 
-              onClick={() => setIsAuthModalOpen(true)}
-              className="px-6 py-2.5 bg-white text-black text-sm font-black rounded-full hover:bg-zinc-200 transition-all active:scale-95"
-            >
-              Login
-            </button>
-          )}
-          
-          <button 
-            onClick={handleAdminToggle}
-            className="p-2.5 rounded-full hover:bg-white/5 transition-colors text-white/60 hover:text-white"
-          >
-            <UserIcon className="w-5 h-5" />
-          </button>
+              )}
+          </div>
         </div>
       </nav>
 
@@ -1666,7 +1681,7 @@ export default function App() {
               
               <div className="bg-black/40 border border-white/5 rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+                  <table className="w-full text-left border-collapse min-w-[600px]">
                     <thead>
                       <tr className="bg-white/5 border-b border-white/10">
                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-white/40">User</th>
@@ -1742,7 +1757,7 @@ export default function App() {
               
               <div className="bg-black/40 border border-white/5 rounded-2xl overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+                  <table className="w-full text-left border-collapse min-w-[600px]">
                     <thead>
                       <tr className="bg-white/5 border-b border-white/10">
                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-white/40">Profile</th>
@@ -1858,27 +1873,27 @@ export default function App() {
           </div>
         ) : activeTab === 'following' ? (
           <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <header className="text-center space-y-4 py-12">
-              <h2 className="text-5xl md:text-7xl font-black tracking-tighter">
+            <header className="text-center space-y-4 py-8 sm:py-12">
+              <h2 className="text-4xl sm:text-6xl lg:text-8xl font-black tracking-tighter">
                 YOUR SOCIAL <br />
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-500 via-rose-500 to-purple-600">
                   CIRCLE
                 </span>
               </h2>
-              <p className="text-white/40 max-w-lg mx-auto text-lg">
+              <p className="text-white/40 max-w-lg mx-auto text-base sm:text-lg px-4">
                 Stay updated with the latest content from creators you follow.
               </p>
             </header>
 
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-32 gap-4">
+              <div className="flex flex-col items-center justify-center py-20 sm:py-32 gap-4">
                 <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
                 <p className="text-white/40 font-medium">Fetching your social circle...</p>
               </div>
             ) : (followingIds.length > 0) ? (
-              <div className="space-y-16">
+              <div className="space-y-12 sm:space-y-16">
                 {/* Combined Feed of followed content */}
-                <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-4 space-y-4">
+                <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-6 gap-3 sm:gap-4 space-y-3 sm:space-y-4 px-2 sm:px-0">
                       {[
                         ...stories.filter(s => followingIds.includes(s.user_id)),
                         ...reels.map(r => ({ ...r, isReel: true })).filter(r => followingIds.includes(r.user_id)),
@@ -1895,15 +1910,15 @@ export default function App() {
                         const query = searchQuery.toLowerCase().trim();
                         const titleA = (a.title || a.caption || '').toLowerCase();
                         const titleB = (b.title || b.caption || '').toLowerCase();
-
+ 
                         // Exact match
                         if (titleA === query && titleB !== query) return -1;
                         if (titleB === query && titleA !== query) return 1;
-
+ 
                         // Starts with
                         if (titleA.startsWith(query) && !titleB.startsWith(query)) return -1;
                         if (titleB.startsWith(query) && !titleA.startsWith(query)) return 1;
-
+ 
                         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
                       })
                       .map((item: any) => {
@@ -1918,26 +1933,26 @@ export default function App() {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-32 space-y-4">
-                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto">
-                  <UserPanel className="w-10 h-10 text-white/20" />
+              <div className="text-center py-20 sm:py-32 space-y-4 px-4">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto">
+                  <UserCircle className="w-8 h-8 sm:w-10 sm:h-10 text-white/20" />
                 </div>
                 <h3 className="text-xl font-bold">Your feed is empty</h3>
-                <p className="text-white/40">Follow some creators to see their latest Stories, Reels, and Wallpapers here!</p>
+                <p className="text-white/40 max-w-xs mx-auto text-sm sm:text-base">Follow some creators to see their latest Stories, Reels, and Wallpapers here!</p>
               </div>
             )}
           </div>
         ) : activeTab === 'stories' ? (
           <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Hero Section */}
-            <header className="text-center space-y-4 py-12">
-              <h2 className="text-5xl md:text-7xl font-black tracking-tighter">
+            <header className="text-center space-y-4 py-8 sm:py-12 px-4">
+              <h2 className="text-4xl sm:text-6xl lg:text-8xl font-black tracking-tighter">
                 ELEVATE YOUR <br />
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-500 via-rose-500 to-purple-600">
                   STORY GAME
                 </span>
               </h2>
-              <p className="text-white/40 max-w-lg mx-auto text-lg">
+              <p className="text-white/40 max-w-lg mx-auto text-base sm:text-lg">
                 Premium status and story photos for WhatsApp, Instagram, and Facebook.
               </p>
             </header>
@@ -1947,7 +1962,7 @@ export default function App() {
               <button 
                 onClick={() => setSelectedCategory(null)}
                 className={cn(
-                  "px-4 py-2 sm:px-6 sm:py-3 rounded-full text-xs sm:text-sm font-bold transition-all border whitespace-nowrap",
+                  "px-4 py-2 sm:px-6 sm:py-3 rounded-full text-[10px] sm:text-sm font-bold transition-all border whitespace-nowrap uppercase tracking-widest",
                   !selectedCategory 
                     ? "bg-white text-black border-white shadow-xl shadow-white/10" 
                     : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10"
@@ -1960,7 +1975,7 @@ export default function App() {
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
                   className={cn(
-                    "px-4 py-2 sm:px-6 sm:py-3 rounded-full text-xs sm:text-sm font-bold transition-all border whitespace-nowrap",
+                    "px-4 py-2 sm:px-6 sm:py-3 rounded-full text-[10px] sm:text-sm font-bold transition-all border whitespace-nowrap uppercase tracking-widest",
                     selectedCategory === cat.id 
                       ? "bg-white text-black border-white shadow-xl shadow-white/10" 
                       : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10"
@@ -1973,20 +1988,20 @@ export default function App() {
 
             {/* Story Grid - Pinterest Style Masonry */}
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-32 gap-4">
+              <div className="flex flex-col items-center justify-center py-20 sm:py-32 gap-4">
                 <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
                 <p className="text-white/40 font-medium">Curating the best stories...</p>
               </div>
             ) : filteredStories.length > 0 ? (
-              <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-4 space-y-4">
+              <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-6 gap-3 sm:gap-4 space-y-3 sm:space-y-4 px-2 sm:px-0">
                 {filteredStories.map(story => (
                   <StoryCard key={story.id} story={story} categories={categories} />
                 ))}
               </div>
             ) : (
-              <div className="text-center py-32 space-y-4">
-                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto">
-                  <ImageIcon className="w-10 h-10 text-white/20" />
+              <div className="text-center py-20 sm:py-32 space-y-4 px-4">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto">
+                  <ImageIcon className="w-8 h-8 sm:w-10 sm:h-10 text-white/20" />
                 </div>
                 <h3 className="text-xl font-bold">No stories found</h3>
                 <p className="text-white/40">Try a different search or category.</p>
@@ -1995,44 +2010,44 @@ export default function App() {
           </div>
         ) : activeTab === 'reels' ? (
           <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-             <header className="text-center space-y-4 py-12">
-              <h2 className="text-5xl md:text-7xl font-black tracking-tighter">
+             <header className="text-center space-y-4 py-8 sm:py-12 px-4">
+              <h2 className="text-4xl sm:text-6xl lg:text-8xl font-black tracking-tighter">
                 TRENDING <br />
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-purple-500 to-indigo-600">
                   REELS
                 </span>
               </h2>
-              <p className="text-white/40 max-w-lg mx-auto text-lg">
+              <p className="text-white/40 max-w-lg mx-auto text-base sm:text-lg">
                 Short-form vertical videos to keep you entertained and inspired.
               </p>
             </header>
 
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-32 gap-4">
+              <div className="flex flex-col items-center justify-center py-20 sm:py-32 gap-4">
                 <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
                 <p className="text-white/40 font-medium">Loading reels...</p>
               </div>
             ) : filteredReels.length > 0 ? (
               /* Reels Grid */
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-6 px-2 sm:px-0">
                 {filteredReels.map(reel => (
                   <div key={reel.id} 
                        onClick={() => navigate(`/post/reels/${reel.id}`)}
-                       className="aspect-[9/16] rounded-[2rem] overflow-hidden bg-white/5 border border-white/10 group cursor-pointer relative shadow-2xl">
+                       className="aspect-[9/16] rounded-2xl sm:rounded-[2rem] overflow-hidden bg-white/5 border border-white/10 group cursor-pointer relative shadow-2xl">
                     <video src={reel.video_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <Play className="w-10 h-10 text-white fill-white" />
                     </div>
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <p className="text-xs font-bold line-clamp-1">{reel.caption || 'Untitled'}</p>
+                    <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4">
+                      <p className="text-[10px] sm:text-xs font-bold line-clamp-1">{reel.caption || 'Untitled'}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-32 space-y-4">
-                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto">
-                  <Video className="w-10 h-10 text-white/20" />
+              <div className="text-center py-20 sm:py-32 space-y-4 px-4">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto">
+                  <Video className="w-8 h-8 sm:w-10 sm:h-10 text-white/20" />
                 </div>
                 <h3 className="text-xl font-bold">No reels found</h3>
                 <p className="text-white/40">Try searching for something else.</p>
@@ -2042,14 +2057,14 @@ export default function App() {
         ) : activeTab === 'wallpapers' ? (
           <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Hero Section */}
-            <header className="text-center space-y-4 py-12">
-              <h2 className="text-5xl md:text-7xl font-black tracking-tighter">
+            <header className="text-center space-y-4 py-8 sm:py-12 px-4">
+              <h2 className="text-4xl sm:text-6xl lg:text-8xl font-black tracking-tighter">
                 PREMIUM <br />
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-600">
                   WALLPAPERS
                 </span>
               </h2>
-              <p className="text-white/40 max-w-lg mx-auto text-lg">
+              <p className="text-white/40 max-w-lg mx-auto text-base sm:text-lg">
                 Stunning high-quality wallpapers for your mobile device.
               </p>
             </header>
@@ -2059,7 +2074,7 @@ export default function App() {
               <button 
                 onClick={() => setSelectedCategory(null)}
                 className={cn(
-                  "px-4 py-2 sm:px-6 sm:py-3 rounded-full text-xs sm:text-sm font-bold transition-all border whitespace-nowrap",
+                  "px-4 py-2 sm:px-6 sm:py-3 rounded-full text-[10px] sm:text-sm font-bold transition-all border whitespace-nowrap uppercase tracking-widest",
                   !selectedCategory 
                     ? "bg-white text-black border-white shadow-xl shadow-white/10" 
                     : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10"
@@ -2072,7 +2087,7 @@ export default function App() {
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
                   className={cn(
-                    "px-4 py-2 sm:px-6 sm:py-3 rounded-full text-xs sm:text-sm font-bold transition-all border whitespace-nowrap",
+                    "px-4 py-2 sm:px-6 sm:py-3 rounded-full text-[10px] sm:text-sm font-bold transition-all border whitespace-nowrap uppercase tracking-widest",
                     selectedCategory === cat.id 
                       ? "bg-white text-black border-white shadow-xl shadow-white/10" 
                       : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10"
@@ -2085,12 +2100,12 @@ export default function App() {
 
             {/* Wallpaper Grid - Pinterest Style Masonry */}
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-32 gap-4">
+              <div className="flex flex-col items-center justify-center py-20 sm:py-32 gap-4">
                 <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
                 <p className="text-white/40 font-medium">Loading wallpapers...</p>
               </div>
             ) : filteredWallpapers.length > 0 ? (
-              <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-4 space-y-4">
+              <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-6 gap-3 sm:gap-4 space-y-3 sm:space-y-4 px-2 sm:px-0">
                 {filteredWallpapers.map(wallpaper => (
                   <WallpaperCard 
                     key={wallpaper.id}
@@ -2100,12 +2115,12 @@ export default function App() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-32 space-y-4">
-                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto">
-                  <Palette className="w-10 h-10 text-white/20" />
+              <div className="text-center py-20 sm:py-32 space-y-4 px-4">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto">
+                  <Palette className="w-8 h-8 sm:w-10 sm:h-10 text-white/20" />
                 </div>
                 <h3 className="text-xl font-bold">No wallpapers found</h3>
-                <p className="text-white/40">Try selecting a different category or search term.</p>
+                <p className="text-white/40 text-sm sm:text-base">Try selecting a different category or search term.</p>
               </div>
             )}
           </div>

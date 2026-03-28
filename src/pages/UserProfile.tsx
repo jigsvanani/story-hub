@@ -121,61 +121,63 @@ export const UserProfile: React.FC = () => {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-6 py-12 space-y-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8 sm:space-y-12">
         {/* Profile Info Card */}
-        <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 blur-[100px] -mr-32 -mt-32"></div>
+        <div className="bg-white/5 border border-white/10 rounded-2xl sm:rounded-[2.5rem] p-6 sm:p-8 md:p-12 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-48 h-48 sm:w-64 sm:h-64 bg-orange-500/10 blur-[80px] sm:blur-[100px] -mr-24 -mt-24 sm:-mr-32 sm:-mt-32"></div>
           
-          <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-            <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2rem] bg-white/10 border border-white/20 overflow-hidden shadow-2xl shrink-0">
+          <div className="flex flex-col md:flex-row items-center gap-6 sm:gap-8 relative z-10">
+            <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-2xl sm:rounded-[2rem] bg-white/10 border border-white/20 overflow-hidden shadow-2xl shrink-0">
               {profile.avatar_url ? (
                 <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
               ) : (
-                <UserIcon className="w-full h-full p-8 text-white/20" />
+                <UserIcon className="w-full h-full p-6 sm:p-8 text-white/20" />
               )}
             </div>
             
-            <div className="flex-1 text-center md:text-left space-y-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex-1 text-center md:text-left space-y-4 sm:space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
                 <div className="space-y-1">
-                  <h2 className="text-4xl md:text-5xl font-black tracking-tighter">@{profile.username}</h2>
-                  <div className="flex items-center justify-center md:justify-start gap-4 text-white/40 text-sm font-bold uppercase tracking-widest">
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter">@{profile.username}</h2>
+                  <div className="flex items-center justify-center md:justify-start gap-4 text-white/40 text-[10px] sm:text-xs font-bold uppercase tracking-widest">
                     <div className="flex items-center gap-1.5">
-                      <Calendar className="w-4 h-4" />
+                      <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       Joined {new Date(profile.created_at).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
 
-                <FollowButton 
-                  targetUserId={profile.id} 
-                  currentUserId={currentUser?.id} 
-                  onStatusChange={(isFollowing) => {
-                    setFollowerCount(prev => isFollowing ? prev + 1 : prev - 1);
-                  }}
-                />
+                <div className="w-full md:w-auto">
+                    <FollowButton 
+                      targetUserId={profile.id} 
+                      currentUserId={currentUser?.id} 
+                      onStatusChange={(isFollowing) => {
+                        setFollowerCount(prev => isFollowing ? prev + 1 : prev - 1);
+                      }}
+                    />
+                </div>
               </div>
 
-              <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                <div className="px-5 py-3 bg-white/5 rounded-2xl border border-white/10 flex flex-col md:flex-row md:items-center gap-1 md:gap-3 transition hover:bg-white/10">
-                  <span className="text-xl font-black">{stories.length + reels.length + wallpapers.length}</span>
-                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Posts</span>
+              <div className="flex flex-wrap justify-center md:justify-start gap-2 sm:gap-3">
+                <div className="flex-1 min-w-[80px] sm:flex-none px-3 py-2 sm:px-5 sm:py-3 bg-white/5 rounded-xl sm:rounded-2xl border border-white/10 flex flex-col md:flex-row md:items-center gap-0.5 sm:gap-3 transition hover:bg-white/10">
+                  <span className="text-lg sm:text-xl font-black">{stories.length + reels.length + wallpapers.length}</span>
+                  <span className="text-[8px] sm:text-[10px] font-bold text-white/40 uppercase tracking-widest">Posts</span>
                 </div>
                 
                 <button 
                   onClick={() => setIsFollowListOpen({ isOpen: true, type: 'followers' })}
-                  className="px-5 py-3 bg-white/5 rounded-2xl border border-white/10 flex flex-col md:flex-row md:items-center gap-1 md:gap-3 transition hover:bg-white/10 active:scale-95"
+                  className="flex-1 min-w-[80px] sm:flex-none px-3 py-2 sm:px-5 sm:py-3 bg-white/5 rounded-xl sm:rounded-2xl border border-white/10 flex flex-col md:flex-row md:items-center gap-0.5 sm:gap-3 transition hover:bg-white/10 active:scale-95"
                 >
-                  <span className="text-xl font-black">{followerCount}</span>
-                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Followers</span>
+                  <span className="text-lg sm:text-xl font-black">{followerCount}</span>
+                  <span className="text-[8px] sm:text-[10px] font-bold text-white/40 uppercase tracking-widest">Followers</span>
                 </button>
 
                 <button 
                   onClick={() => setIsFollowListOpen({ isOpen: true, type: 'following' })}
-                  className="px-5 py-3 bg-white/5 rounded-2xl border border-white/10 flex flex-col md:flex-row md:items-center gap-1 md:gap-3 transition hover:bg-white/10 active:scale-95"
+                  className="flex-1 min-w-[80px] sm:flex-none px-3 py-2 sm:px-5 sm:py-3 bg-white/5 rounded-xl sm:rounded-2xl border border-white/10 flex flex-col md:flex-row md:items-center gap-0.5 sm:gap-3 transition hover:bg-white/10 active:scale-95"
                 >
-                  <span className="text-xl font-black">{followingCount}</span>
-                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Following</span>
+                  <span className="text-lg sm:text-xl font-black">{followingCount}</span>
+                  <span className="text-[8px] sm:text-[10px] font-bold text-white/40 uppercase tracking-widest">Following</span>
                 </button>
               </div>
             </div>
@@ -196,37 +198,37 @@ export const UserProfile: React.FC = () => {
         </AnimatePresence>
 
         {/* Content Tabs */}
-        <div className="space-y-8">
-          <div className="flex justify-center">
-            <div className="inline-flex bg-white/5 p-1.5 rounded-2xl border border-white/10">
+        <div className="space-y-6 sm:space-y-8">
+          <div className="flex justify-center -mx-4 sm:mx-0 overflow-x-auto no-scrollbar px-4 sm:px-0">
+            <div className="inline-flex bg-white/5 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-white/10">
               <button 
                 onClick={() => setActiveTab('stories')}
                 className={cn(
-                  "px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2",
-                  activeTab === 'stories' ? "bg-white text-black shadow-xl" : "text-white/40 hover:text-white"
+                  "px-4 py-2 sm:px-6 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs md:text-sm font-bold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap uppercase tracking-widest",
+                  activeTab === 'stories' ? "bg-white text-black shadow-lg sm:shadow-xl" : "text-white/40 hover:text-white"
                 )}
               >
-                <ImageIcon className="w-4 h-4" />
+                <ImageIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 Stories ({stories.length})
               </button>
               <button 
                 onClick={() => setActiveTab('reels')}
                 className={cn(
-                  "px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2",
-                  activeTab === 'reels' ? "bg-white text-black shadow-xl" : "text-white/40 hover:text-white"
+                  "px-4 py-2 sm:px-6 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs md:text-sm font-bold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap uppercase tracking-widest",
+                  activeTab === 'reels' ? "bg-white text-black shadow-lg sm:shadow-xl" : "text-white/40 hover:text-white"
                 )}
               >
-                <Video className="w-4 h-4" />
+                <Video className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 Reels ({reels.length})
               </button>
               <button 
                 onClick={() => setActiveTab('wallpapers')}
                 className={cn(
-                  "px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2",
-                  activeTab === 'wallpapers' ? "bg-white text-black shadow-xl" : "text-white/40 hover:text-white"
+                  "px-4 py-2 sm:px-6 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs md:text-sm font-bold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap uppercase tracking-widest",
+                  activeTab === 'wallpapers' ? "bg-white text-black shadow-lg sm:shadow-xl" : "text-white/40 hover:text-white"
                 )}
               >
-                <Palette className="w-4 h-4" />
+                <Palette className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 Wallpapers ({wallpapers.length})
               </button>
             </div>
@@ -241,7 +243,7 @@ export const UserProfile: React.FC = () => {
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               {activeTab === 'stories' && (
                 stories.length > 0 ? (
-                  <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-4 space-y-4">
+                  <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-6 gap-3 sm:gap-4 space-y-3 sm:space-y-4">
                     {stories.map(story => (
                       <StoryCard key={story.id} story={story} categories={categories} />
                     ))}
@@ -251,7 +253,7 @@ export const UserProfile: React.FC = () => {
 
               {activeTab === 'wallpapers' && (
                 wallpapers.length > 0 ? (
-                  <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-4 space-y-4">
+                  <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-6 gap-3 sm:gap-4 space-y-3 sm:space-y-4">
                     {wallpapers.map(wallpaper => (
                       <WallpaperCard key={wallpaper.id} wallpaper={wallpaper} categories={categories} />
                     ))}
@@ -261,17 +263,17 @@ export const UserProfile: React.FC = () => {
 
               {activeTab === 'reels' && (
                 reels.length > 0 ? (
-                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                   <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-6">
                       {reels.map(reel => (
                         <div key={reel.id} 
                              onClick={() => navigate(`/post/reels/${reel.id}`)}
-                             className="aspect-[9/16] rounded-3xl overflow-hidden bg-white/5 border border-white/10 group cursor-pointer relative">
+                             className="aspect-[9/16] rounded-2xl sm:rounded-[2rem] overflow-hidden bg-white/5 border border-white/10 group cursor-pointer relative shadow-2xl">
                           <video src={reel.video_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Play className="w-10 h-10 text-white fill-white" />
+                            <Play className="w-8 h-8 sm:w-10 sm:h-10 text-white fill-white" />
                           </div>
-                          <div className="absolute bottom-4 left-4 right-4">
-                            <p className="text-xs font-bold line-clamp-1">{reel.caption || 'Untitled'}</p>
+                          <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 right-3 sm:right-4">
+                            <p className="text-[10px] sm:text-xs font-bold line-clamp-1">{reel.caption || 'Untitled'}</p>
                           </div>
                         </div>
                       ))}

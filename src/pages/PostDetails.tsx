@@ -292,25 +292,25 @@ export const PostDetails: React.FC = () => {
          <div className="w-10"></div>
       </nav>
 
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:flex-wrap">
+      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row">
         {/* Main Media View */}
-        <div className="flex-1 flex items-center justify-center p-6 lg:p-12 min-h-[50vh] lg:min-h-0 bg-black/50">
+        <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-12 min-h-[40vh] sm:min-h-[50vh] lg:min-h-0 bg-black/50">
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="relative max-w-full max-h-[85vh] rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 bg-black"
+            className="relative w-full max-h-[70vh] sm:max-h-[85vh] rounded-2xl sm:rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 bg-black"
           >
             {isVideo ? (
                <video 
                  src={mediaUrl} 
-                 className="max-w-full max-h-[85vh] object-contain"
+                 className="w-full h-full max-h-[70vh] sm:max-h-[85vh] object-contain"
                  loop autoPlay controls
                />
             ) : (
                <img 
                  src={mediaUrl} 
                  alt="Detail"
-                 className="max-w-full max-h-[85vh] object-contain"
+                 className="w-full h-full max-h-[70vh] sm:max-h-[85vh] object-contain"
                  referrerPolicy="no-referrer"
                />
             )}
@@ -318,7 +318,7 @@ export const PostDetails: React.FC = () => {
         </div>
 
         {/* Sidebar: Details & Actions */}
-        <div className="w-full lg:w-[400px] bg-white/5 border-l border-white/10 p-8 space-y-8 lg:min-h-[calc(100vh-73px)] overflow-y-auto">
+        <div className="w-full lg:w-[400px] bg-white/5 border-t lg:border-t-0 lg:border-l border-white/10 p-5 sm:p-8 space-y-6 sm:space-y-8 lg:min-h-[calc(100vh-73px)] overflow-y-auto">
           <div className="space-y-6">
             {/* Author Info */}
             {post.profiles && (
@@ -341,31 +341,31 @@ export const PostDetails: React.FC = () => {
 
             <div>
               {post.categories && (
-                <span className="px-3 py-1 bg-orange-500/20 text-orange-500 rounded-full text-xs font-bold uppercase tracking-widest border border-orange-500/20">
+                <span className="px-3 py-1 bg-orange-500/20 text-orange-500 rounded-full text-[10px] font-bold uppercase tracking-widest border border-orange-500/20">
                   {post.categories.name}
                 </span>
               )}
-              <h2 className="text-3xl font-black mt-4 tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-black mt-4 tracking-tight leading-tight">
                 {post.title || (type === 'wallpapers' ? 'Wallpaper' : type === 'reels' ? 'Reel' : 'Story')}
               </h2>
               {post.caption && (
-                <p className="text-orange-500 font-bold mt-2">"{post.caption}"</p>
+                <p className="text-orange-500 font-bold mt-2 text-sm sm:text-base italic">"{post.caption}"</p>
               )}
               {post.description && (
-                <p className="text-white/60 mt-4 text-sm leading-relaxed">{post.description}</p>
+                <p className="text-white/60 mt-4 text-xs sm:text-sm leading-relaxed">{post.description}</p>
               )}
             </div>
 
             <div className="flex flex-col gap-3">
               {type === 'wallpapers' && (
-                <div className="flex gap-3 mb-2">
-                  <div className="flex-1 bg-white/5 py-3 rounded-xl flex items-center justify-center gap-2 border border-white/10">
-                    <Heart className="w-4 h-4 text-rose-500" />
-                    <span className="font-bold">{post.likes_count || 0}</span>
+                <div className="flex gap-2 sm:gap-3 mb-2">
+                  <div className="flex-1 bg-white/5 py-2 sm:py-3 rounded-xl flex items-center justify-center gap-1.5 sm:gap-2 border border-white/10">
+                    <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-500" />
+                    <span className="text-xs sm:text-base font-bold">{post.likes_count || 0}</span>
                   </div>
-                  <div className="flex-1 bg-white/5 py-3 rounded-xl flex items-center justify-center gap-2 border border-white/10">
-                    <Download className="w-4 h-4 text-blue-500" />
-                    <span className="font-bold">{post.downloads_count || 0}</span>
+                  <div className="flex-1 bg-white/5 py-2 sm:py-3 rounded-xl flex items-center justify-center gap-1.5 sm:gap-2 border border-white/10">
+                    <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
+                    <span className="text-xs sm:text-base font-bold">{post.downloads_count || 0}</span>
                   </div>
                 </div>
               )}
@@ -373,16 +373,16 @@ export const PostDetails: React.FC = () => {
               <div className="flex gap-2">
                 <button 
                   onClick={() => type === 'wallpapers' ? handleLikeWallpaper() : downloadImage(mediaUrl, post.id)}
-                  className="flex-1 px-8 py-4 bg-white text-black font-black rounded-2xl hover:bg-zinc-200 transition active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-white/5"
+                  className="flex-1 px-4 sm:px-8 py-3.5 sm:py-4 bg-white text-black text-xs sm:text-sm font-black rounded-xl sm:rounded-2xl hover:bg-zinc-200 transition active:scale-95 flex items-center justify-center gap-2 shadow-xl"
                 >
                   {type === 'wallpapers' ? (
                     <>
-                      <Heart className={cn("w-5 h-5", isLiked ? "fill-black" : "")} />
+                      <Heart className={cn("w-4 h-4 sm:w-5 sm:h-5", isLiked ? "fill-black" : "")} />
                       {isLiked ? 'LIKED' : 'LIKE'}
                     </>
                   ) : (
                     <>
-                      <Download className="w-5 h-5" />
+                      <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                       DOWNLOAD
                     </>
                   )}
@@ -391,7 +391,7 @@ export const PostDetails: React.FC = () => {
                   onClick={handleSaveToggle}
                   disabled={isSaving}
                   className={cn(
-                    "p-4 rounded-2xl transition-all active:scale-95 flex items-center justify-center border",
+                    "p-3.5 sm:p-4 rounded-xl sm:rounded-2xl transition-all active:scale-95 flex items-center justify-center border",
                     isSaved 
                     ? "bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/20" 
                     : "bg-white/5 border-white/10 text-white hover:bg-white/10"
@@ -399,9 +399,9 @@ export const PostDetails: React.FC = () => {
                   title={isSaved ? "Remove from saved" : "Save to profile"}
                 >
                   {isSaving ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                   ) : (
-                    <Bookmark className={cn("w-5 h-5", isSaved && "fill-current")} />
+                    <Bookmark className={cn("w-4 h-4 sm:w-5 sm:h-5", isSaved && "fill-current")} />
                   )}
                 </button>
               </div>
@@ -409,26 +409,26 @@ export const PostDetails: React.FC = () => {
               {type === 'wallpapers' && (
                 <button 
                    onClick={() => downloadImage(mediaUrl, post.id)}
-                   className="w-full bg-white/10 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-white/20 transition-all active:scale-95 border border-white/10"
+                   className="w-full bg-white/10 text-white py-3.5 sm:py-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 sm:gap-3 hover:bg-white/20 transition-all active:scale-95 border border-white/10"
                  >
-                   <Download className="w-5 h-5" />
+                   <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                    DOWNLOAD WALLPAPER
                  </button>
               )}
               
-              <div className="grid grid-cols-2 gap-3 mt-2">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-1">
                 <button 
                   onClick={() => handleSocialShare('instagram', mediaUrl)}
-                  className="bg-[#E1306C] py-3 rounded-2xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-95"
+                  className="bg-[#E1306C] py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-95"
                 >
-                  <Instagram className="w-4 h-4" />
+                  <Instagram className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   Insta
                 </button>
                 <button 
                   onClick={() => handleSocialShare('facebook', mediaUrl)}
-                  className="bg-[#1877F2] py-3 rounded-2xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-95"
+                  className="bg-[#1877F2] py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all active:scale-95"
                 >
-                  <Facebook className="w-4 h-4" />
+                  <Facebook className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   FB
                 </button>
               </div>
@@ -437,9 +437,9 @@ export const PostDetails: React.FC = () => {
                 href={`https://wa.me/?text=${encodeURIComponent('Check out this post: ' + window.location.href)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full bg-[#25D366] text-white py-4 rounded-2xl font-black flex items-center justify-center gap-3 hover:opacity-90 transition-all active:scale-95 mt-2 shadow-lg shadow-[#25D366]/10"
+                className="w-full bg-[#25D366] text-white py-3.5 sm:py-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 sm:gap-3 hover:opacity-90 transition-all active:scale-95 mt-1 shadow-lg shadow-[#25D366]/10"
               >
-                <MessageCircle className="w-5 h-5" />
+                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                 WHATSAPP SHARE
               </a>
             </div>
