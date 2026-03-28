@@ -1152,6 +1152,7 @@ export default function App() {
     return (
       <UserPanel 
         user={user} 
+        categories={categories}
         stories={stories} 
         reels={reels} 
         wallpapers={wallpapers} 
