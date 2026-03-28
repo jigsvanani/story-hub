@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Category, Story, Reel, Wallpaper } from '../types';
 import { ArrowLeft } from 'lucide-react';
 
-interface AdminPanelProps {
+  user: { email: string } | null;
   isAdmin: boolean;
-  adminPassword: string;
-  setAdminPassword: (password: string) => void;
   handleAdminToggle: () => void;
   stories: Story[];
   reels: Reel[];
@@ -16,10 +14,9 @@ interface AdminPanelProps {
   fetchData: () => void;
 }
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({
+
+  user,
   isAdmin,
-  adminPassword,
-  setAdminPassword,
   handleAdminToggle,
   stories,
   reels,
@@ -28,58 +25,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   fetchData,
 }) => {
   const navigate = useNavigate();
-  const [authError, setAuthError] = useState<string | null>(null);
-
-  const handleUnlock = () => {
-    setAuthError(null);
-    if (adminPassword === 'admin123') {
-      handleAdminToggle();
-      setAuthError(null);
-    } else {
-      setAuthError('Invalid password');
-      setAdminPassword('');
-    }
-  };
 
   const handleLogout = () => {
     handleAdminToggle();
     navigate('/');
   };
 
-  if (!isAdmin) {
+  if (!user || user.email !== 'jigs.vanani@gmail.com') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black flex items-center justify-center">
         <div className="w-full max-w-md">
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
             <h1 className="text-3xl font-black text-white mb-2 text-center">Admin Panel</h1>
-            <p className="text-white/60 text-center mb-6">Enter password to access</p>
-
-            <div className="mb-6">
-              <p className="block text-sm font-medium text-white/40 mb-2">Admin Access</p>
-              <p className="text-white/60 text-sm mb-4">Only jigs.vanani@gmail.com can access admin panel</p>
-              <input
-                type="email"
-                value={user?.email || ''}
-                readOnly
-                placeholder="Login with admin email"
-                className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-blue-500 transition-colors"
-              />
-            </div>
-
-            {authError && (
-              <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-sm text-red-200">
-                {authError}
-              </div>
-            )}
-
-            <button
-              onClick={handleUnlock}
-              disabled={!user}
-              className="w-full px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-bold rounded-lg transition-colors mb-4"
-            >
-              {user ? 'Access Admin Panel' : 'Please Login First'}
-            </button>
-
+            <p className="text-white/60 text-center mb-6">Only jigs.vanani@gmail.com can access admin panel</p>
+            <input
+              type="email"
+              value={user?.email || ''}
+              readOnly
+              placeholder="Login with admin email"
+              className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-blue-500 transition-colors mb-4"
+            />
             <button
               onClick={() => navigate('/')}
               className="w-full px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
