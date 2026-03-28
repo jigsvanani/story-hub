@@ -600,10 +600,13 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
     if (user?.email === 'jigs.vanani@gmail.com') {
       fetchAllComments();
     }
-  };
+  }, [user]);
 
   const fetchAllComments = async () => {
     const { data } = await supabase
