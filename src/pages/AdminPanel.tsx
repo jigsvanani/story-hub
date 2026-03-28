@@ -154,8 +154,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <p className="text-white/40 text-sm">No stories yet</p>
               ) : (
                 stories.map((story) => (
-                  <div key={story.id} className="p-3 bg-white/5 rounded-lg text-sm text-white/70 truncate">
-                    {story.title || 'Untitled Story'}
+                  <div key={story.id} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg text-sm text-white/70 truncate">
+                    {story.image_url && (
+                      <img src={story.image_url} alt="Story" className="w-12 h-12 object-cover rounded-md border border-white/10" />
+                    )}
+                    <span>{story.title || 'Untitled Story'}</span>
                   </div>
                 ))
               )}
@@ -170,8 +173,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <p className="text-white/40 text-sm">No reels yet</p>
               ) : (
                 reels.map((reel) => (
-                  <div key={reel.id} className="p-3 bg-white/5 rounded-lg text-sm text-white/70 truncate">
-                    {reel.title || 'Untitled Reel'}
+                  <div key={reel.id} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg text-sm text-white/70 truncate">
+                    {reel.video_url && (
+                      <video src={reel.video_url} className="w-12 h-12 object-cover rounded-md border border-white/10" controls />
+                    )}
+                    <span>{reel.title || 'Untitled Reel'}</span>
                   </div>
                 ))
               )}
@@ -186,8 +192,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 <p className="text-white/40 text-sm">No wallpapers yet</p>
               ) : (
                 wallpapers.map((wallpaper) => (
-                  <div key={wallpaper.id} className="p-3 bg-white/5 rounded-lg text-sm text-white/70 truncate">
-                    {wallpaper.title || 'Untitled Wallpaper'}
+                  <div key={wallpaper.id} className="flex items-center gap-3 p-3 bg-white/5 rounded-lg text-sm text-white/70 truncate">
+                    {wallpaper.image_url && (
+                      <img src={wallpaper.image_url} alt="Wallpaper" className="w-12 h-12 object-cover rounded-md border border-white/10" />
+                    )}
+                    <span>{wallpaper.title || 'Untitled Wallpaper'}</span>
                   </div>
                 ))
               )}
