@@ -89,13 +89,13 @@ export const UserPanel: React.FC<UserPanelProps> = ({
       // Upload file to Supabase Storage
       const fileName = `${type}/${user.id}/${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage
-        .from('uploads')
+        .from('story-images')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
-        .from('uploads')
+        .from('story-images')
         .getPublicUrl(fileName);
 
       setUploadProgress('Saving to database...');
