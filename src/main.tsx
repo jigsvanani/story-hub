@@ -17,21 +17,3 @@ createRoot(document.getElementById('root')!).render(
     </Router>
   </StrictMode>,
 );
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <Router>
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute isAuthenticated={!!user} isAdmin={user?.email === 'jigs.vanani@gmail.com'}>
-              <AdminPanel />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
-  </StrictMode>,
-);

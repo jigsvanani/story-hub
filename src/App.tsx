@@ -322,7 +322,7 @@ const CommentSection = ({ postId, comments, onAddComment, isSubmitting }: any) =
   );
 };
 
-const StoryCard = ({ story, categories, onClick }: any) => {
+const StoryCard = ({ story, categories, onClick, setSelectedUser }: any) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -420,7 +420,7 @@ const StoryCard = ({ story, categories, onClick }: any) => {
   );
 };
 
-const WallpaperCard = ({ wallpaper, categories, onClick }: any) => {
+const WallpaperCard = ({ wallpaper, categories, onClick, setSelectedUser }: any) => {
   const [isLiked, setIsLiked] = useState(false);
 
   return (
@@ -1721,6 +1721,7 @@ export default function App() {
                     story={story}
                     categories={categories}
                     onClick={setSelectedStory}
+                    setSelectedUser={setSelectedUser}
                   />
                 ))}
               </div>
@@ -1794,6 +1795,7 @@ export default function App() {
                     downloadImage={downloadImage}
                     handleLikeWallpaper={handleLikeWallpaper}
                     onClick={setSelectedWallpaper}
+                    setSelectedUser={setSelectedUser}
                   />
                 ))}
               </div>
