@@ -1122,12 +1122,8 @@ export default function App() {
   const [showDeleteModal, setShowDeleteModal] = useState<{ type: 'category' | 'story' | 'reel' | 'wallpaper', id: string, extra?: string } | null>(null);
 
   const handleAdminToggle = () => {
-    if (user?.email === 'jigs.vanani@gmail.com') {
-      setIsAdmin(!isAdmin);
-    } else {
-      // Only jigs.vanani@gmail.com can access admin
-      alert('Access denied. Admin only.');
-    }
+    // Navigate to admin/user panel for all logged-in users
+    window.location.href = '/admin';
   };
 
   return (
@@ -1250,7 +1246,7 @@ export default function App() {
             onClick={handleAdminToggle}
             className="p-2.5 rounded-full hover:bg-white/5 transition-colors text-white/60 hover:text-white"
           >
-            {isAdmin ? <Home className="w-5 h-5" /> : <Settings className="w-5 h-5" />}
+            <UserIcon className="w-5 h-5" />
           </button>
         </div>
       </nav>

@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 import { Category, Story, Reel, Wallpaper } from './types';
 import { AdminPanel } from './pages/AdminPanel';
+import { UserPanel } from './pages/UserPanel';
 
 export default function Root() {
-  const [user, setUser] = useState<{ email: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [stories, setStories] = useState<Story[]>([]);
   const [reels, setReels] = useState<Reel[]>([]);
   const [wallpapers, setWallpapers] = useState<Wallpaper[]>([]);
@@ -13,15 +14,16 @@ export default function Root() {
 
   useEffect(() => {
     fetchData();
-    const session = supabase.auth.session ? supabase.auth.session() : null;
-    if (session && session.user) {
-      setUser({ email: session.user.email });
-    } else {
-      setUser(null);
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && session.user) {
+        setUser({ id: session.user.id, email: session.user.email });
+      } else {
+        setUser(null);
+      }
+    });
     supabase.auth.onAuthStateChange((_event, session) => {
       if (session && session.user) {
-        setUser({ email: session.user.email });
+        setUser({ id: session.user.id, email: session.user.email });
       } else {
         setUser(null);
       }
@@ -64,15 +66,23 @@ export default function Root() {
 
 
 
-  return (
+  return user?.email === 'jigs.vanani@gmail.com' ? (
     <AdminPanel
       user={user}
-      isAdmin={user?.email === 'jigs.vanani@gmail.com'}
+      isAdmin={true}
       handleAdminToggle={() => {}}
       stories={stories}
       reels={reels}
       wallpapers={wallpapers}
       categories={categories}
+      fetchData={fetchData}
+    />
+  ) : (
+    <UserPanel
+      user={user}
+      stories={stories}
+      reels={reels}
+      wallpapers={wallpapers}
       fetchData={fetchData}
     />
   );
