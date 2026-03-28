@@ -38,7 +38,8 @@ import {
   UserCircle,
   Shield,
   MessageSquare,
-  Send
+  Send,
+  Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StoryCard, WallpaperCard } from './components/ContentCards';
@@ -353,6 +354,7 @@ export default function App() {
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploadCaption, setUploadCaption] = useState('');
   const [uploadDescription, setUploadDescription] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const reelInputRef = useRef<HTMLInputElement>(null);
   const wallpaperInputRef = useRef<HTMLInputElement>(null);
@@ -1073,15 +1075,37 @@ export default function App() {
       <nav className="sticky top-0 z-50 bg-[#0F0F0F]/80 backdrop-blur-xl border-b border-white/10 px-6 py-4 flex items-center justify-between">
         <div 
           onClick={() => navigate('/')}
-          className="flex items-center gap-2 cursor-pointer group"
+          className="flex items-center gap-2 cursor-pointer group shrink-0"
         >
           <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
             <Home className="text-white w-6 h-6" />
           </div>
-          <h1 className="text-xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60 group-hover:from-orange-500 group-hover:to-rose-600 transition-all">
+          <h1 className="text-xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60 group-hover:from-orange-500 group-hover:to-rose-600 transition-all hidden sm:block">
             StoryHub
           </h1>
         </div>
+
+        {/* Global Search Bar */}
+        {!isAdmin && (
+          <div className="flex-1 max-w-md mx-4 relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-orange-500 transition-colors" />
+            <input 
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by title..."
+              className="w-full bg-white/5 border border-white/10 rounded-2xl py-2.5 pl-11 pr-4 text-sm text-white focus:outline-none focus:border-white/20 focus:ring-4 focus:ring-orange-500/10 transition-all font-medium"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-all"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        )}
         
         <div className="flex items-center gap-4">
           {user ? (
@@ -1502,7 +1526,20 @@ export default function App() {
                     Reels ({reels.length})
                   </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
-                    {reels.map(reel => (
+                    {reels
+                      .filter(r => !searchQuery.trim() || (r.title || r.caption || '').toLowerCase().includes(searchQuery.toLowerCase().trim()))
+                      .sort((a, b) => {
+                        if (!searchQuery.trim()) return 0;
+                        const q = searchQuery.toLowerCase().trim();
+                        const tA = (a.title || a.caption || '').toLowerCase();
+                        const tB = (b.title || b.caption || '').toLowerCase();
+                        if (tA === q && tB !== q) return -1;
+                        if (tB === q && tA !== q) return 1;
+                        if (tA.startsWith(q) && !tB.startsWith(q)) return -1;
+                        if (tB.startsWith(q) && !tA.startsWith(q)) return 1;
+                        return 0;
+                      })
+                      .map(reel => (
                       <div key={reel.id} className="relative aspect-[9/16] rounded-2xl overflow-hidden group bg-black/40 border border-white/5">
                         <video src={reel.video_url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
                         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
@@ -1785,16 +1822,39 @@ export default function App() {
               <div className="space-y-16">
                 {/* Combined Feed of followed content */}
                 <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-4 space-y-4">
-                  {[
-                    ...stories.filter(s => followingIds.includes(s.user_id)),
-                    ...reels.map(r => ({ ...r, isReel: true })).filter(r => followingIds.includes(r.user_id)),
-                    ...wallpapers.map(w => ({ ...w, isWallpaper: true })).filter(w => followingIds.includes(w.user_id))
-                  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((item: any) => {
-                    if (item.isWallpaper) {
-                      return <WallpaperCard key={item.id} wallpaper={item} categories={categories} />;
-                    }
-                    return <StoryCard key={item.id} story={item} categories={categories} />;
-                  })}
+                      {[
+                        ...stories.filter(s => followingIds.includes(s.user_id)),
+                        ...reels.map(r => ({ ...r, isReel: true })).filter(r => followingIds.includes(r.user_id)),
+                        ...wallpapers.map(w => ({ ...w, isWallpaper: true })).filter(w => followingIds.includes(w.user_id))
+                      ]
+                      .filter(item => {
+                        if (!searchQuery.trim()) return true;
+                        const query = searchQuery.toLowerCase().trim();
+                        return (item.title || item.caption || item.description || '').toLowerCase().includes(query);
+                      })
+                      .sort((a, b) => {
+                        if (!searchQuery.trim()) return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                        
+                        const query = searchQuery.toLowerCase().trim();
+                        const titleA = (a.title || a.caption || '').toLowerCase();
+                        const titleB = (b.title || b.caption || '').toLowerCase();
+
+                        // Exact match
+                        if (titleA === query && titleB !== query) return -1;
+                        if (titleB === query && titleA !== query) return 1;
+
+                        // Starts with
+                        if (titleA.startsWith(query) && !titleB.startsWith(query)) return -1;
+                        if (titleB.startsWith(query) && !titleA.startsWith(query)) return 1;
+
+                        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                      })
+                      .map((item: any) => {
+                        if (item.isWallpaper) {
+                          return <WallpaperCard key={item.id} wallpaper={item} categories={categories} />;
+                        }
+                        return <StoryCard key={item.id} story={item} categories={categories} />;
+                      })}
                 </div>
               </div>
             ) : (
