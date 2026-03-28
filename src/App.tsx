@@ -1532,7 +1532,17 @@ export default function App() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
                     {wallpapers.map(wallpaper => (
                       <div key={wallpaper.id} className="relative aspect-[9/16] rounded-2xl overflow-hidden group bg-black/40 border border-white/5">
-                        <img src={wallpaper.image_url} alt="" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                        {wallpaper.video_url ? (
+                          <video 
+                            src={wallpaper.video_url} 
+                            className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" 
+                            muted
+                            loop
+                            autoPlay
+                          />
+                        ) : (
+                          <img src={wallpaper.image_url} alt="" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                        )}
                         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                           <button 
                             onClick={() => setShowDeleteModal({ type: 'wallpaper', id: wallpaper.id, extra: wallpaper.image_url })}
