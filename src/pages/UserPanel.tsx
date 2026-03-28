@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Story, Reel, Wallpaper, Category } from '../types';
-import { ArrowLeft, Upload, Trash2, Image as ImageIcon, Video, Palette, Loader2, MessageSquare, Send, User as UserIcon } from 'lucide-react';
+import { Story, Reel, Wallpaper, Category, Profile } from '../types';
+import { ArrowLeft, Upload, Trash2, Image as ImageIcon, Video, Palette, Loader2, MessageSquare, Send, User as UserIcon, XCircle } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { Filter } from 'bad-words';
 
@@ -11,6 +11,7 @@ const filter = new Filter();
 
 interface UserPanelProps {
   user: { id: string; email: string } | null;
+  profile: Profile | null;
   categories: Category[];
   stories: Story[];
   reels: Reel[];
@@ -20,6 +21,7 @@ interface UserPanelProps {
 
 export const UserPanel: React.FC<UserPanelProps> = ({
   user,
+  profile,
   categories,
   stories,
   reels,
@@ -37,6 +39,9 @@ export const UserPanel: React.FC<UserPanelProps> = ({
   const [uploadCaption, setUploadCaption] = useState('');
   const [uploadDescription, setUploadDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+
+  // Check if user is blocked
+  const isBlocked = profile?.is_blocked && (!profile.blocked_until || new Date(profile.blocked_until) > new Date());
 
   // Filter content to show only user's own uploads
   const userStories = stories.filter(story => story.user_id === user?.id);
