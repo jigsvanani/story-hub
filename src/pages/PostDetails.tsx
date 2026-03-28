@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Download, Instagram, Facebook, MessageCircle, X, Loader2, User as UserIcon, MessageSquare, Send, Heart } from 'lucide-react';
+import { 
+  Download, Instagram, Facebook, MessageCircle, X, Loader2, 
+  User as UserIcon, MessageSquare, Send, Heart, Play, Video, 
+  Image as ImageIcon, Palette, Music
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { Category } from '../types';
@@ -18,6 +22,7 @@ export const PostDetails: React.FC = () => {
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
@@ -25,6 +30,7 @@ export const PostDetails: React.FC = () => {
     if (type && id) {
       fetchPostDetails();
       fetchComments();
+      fetchSuggestions();
     }
   }, [type, id]);
 
@@ -63,6 +69,22 @@ export const PostDetails: React.FC = () => {
       .order('created_at', { ascending: false });
     
     if (data) setComments(data);
+  };
+
+  const fetchSuggestions = async () => {
+    let tableName = type || 'stories';
+    if (tableName !== 'stories' && tableName !== 'reels' && tableName !== 'wallpapers') {
+      tableName = 'stories';
+    }
+
+    const { data } = await supabase
+      .from(tableName)
+      .select('*, profiles(*)')
+      .neq('id', id)
+      .limit(12)
+      .order('created_at', { ascending: false });
+    
+    if (data) setSuggestions(data);
   };
 
   const handleAddComment = async (e: React.FormEvent) => {
@@ -362,6 +384,78 @@ export const PostDetails: React.FC = () => {
               </div>
           </div>
         </div>
+      </div>
+
+      {/* Suggestions Section */}
+      <div className="max-w-7xl mx-auto px-6 py-16 border-t border-white/10">
+        <div className="flex items-center justify-between mb-8">
+          <div className="space-y-1">
+            <h3 className="text-2xl font-black flex items-center gap-3">
+              {type === 'stories' ? <ImageIcon className="w-6 h-6 text-orange-500" /> : 
+               type === 'reels' ? <Video className="w-6 h-6 text-orange-500" /> : 
+               <Palette className="w-6 h-6 text-orange-500" />}
+              More to Explore
+            </h3>
+            <p className="text-white/40 text-sm font-medium">Handpicked {type} you might like</p>
+          </div>
+          <button 
+            onClick={() => navigate('/')}
+            className="text-xs font-bold uppercase tracking-widest text-orange-500 hover:text-orange-400 transition-colors"
+          >
+            View All
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+          {suggestions.map((item) => (
+            <motion.div
+              key={item.id}
+              whileHover={{ y: -8, scale: 1.02 }}
+              className="group relative aspect-[9/16] rounded-3xl overflow-hidden cursor-pointer bg-white/5 border border-white/10 shadow-xl"
+              onClick={() => {
+                navigate(`/post/${type}/${item.id}`);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            >
+              {type === 'reels' || item.video_url ? (
+                <div className="w-full h-full relative">
+                  <video 
+                    src={item.video_url || item.image_url} 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Play className="w-8 h-8 text-white fill-white" />
+                  </div>
+                </div>
+              ) : (
+                <img 
+                  src={item.image_url} 
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  alt="Suggestion"
+                  referrerPolicy="no-referrer"
+                />
+              )}
+              
+              {/* Simple Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
+                <p className="text-[10px] font-black text-white/70 truncate">@{item.profiles?.username || 'user'}</p>
+                {item.title && <h4 className="text-xs font-bold text-white truncate">{item.title}</h4>}
+              </div>
+
+              {type === 'reels' && (
+                <div className="absolute top-3 right-3 p-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10">
+                  <Video className="w-3 h-3 text-white" />
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+
+        {suggestions.length === 0 && (
+          <div className="text-center py-20 bg-white/5 rounded-[2rem] border border-white/10 border-dashed">
+            <p className="text-white/20 font-bold uppercase tracking-widest text-sm">No more suggestions found</p>
+          </div>
+        )}
       </div>
     </div>
   );
