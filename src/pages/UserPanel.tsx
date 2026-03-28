@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { cn } from '../lib/utils';
 import { Story, Reel, Wallpaper, Category, Profile } from '../types';
-import { ArrowLeft, Upload, Trash2, Image as ImageIcon, Video, Palette, Loader2, MessageSquare, Send, User as UserIcon, XCircle, Bookmark, Download as DownloadIcon } from 'lucide-react';
+import { ArrowLeft, Upload, Trash2, Image as ImageIcon, Video, Palette, Loader2, MessageSquare, Send, User as UserIcon, XCircle, Bookmark, Download as DownloadIcon, Settings, Users, Shield, Scissors } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { Filter } from 'bad-words';
 
@@ -19,6 +19,23 @@ interface UserPanelProps {
   wallpapers: Wallpaper[];
   fetchData: () => void;
   onExit: () => void;
+  isAdminMode: boolean;
+  allUsers: Profile[];
+  allComments: any[];
+  newCategoryName: string;
+  setNewCategoryName: (v: string) => void;
+  newCategoryType: 'story' | 'wallpaper';
+  setNewCategoryType: (v: 'story' | 'wallpaper') => void;
+  editingCategory: Category | null;
+  setEditingCategory: (c: Category | null) => void;
+  editCategoryName: string;
+  setEditCategoryName: (v: string) => void;
+  uploadStatus: { type: 'success' | 'error', message: string } | null;
+  handleBlockUser: (id: string, hours: number | null) => Promise<void>;
+  handleDeleteUser: (id: string) => Promise<void>;
+  handleAddCategory: (e: React.FormEvent) => Promise<void>;
+  handleUpdateCategory: (e: React.FormEvent) => Promise<void>;
+  deleteCommentAdmin: (id: string) => Promise<void>;
 }
 
 export const UserPanel: React.FC<UserPanelProps> = ({
@@ -30,11 +47,28 @@ export const UserPanel: React.FC<UserPanelProps> = ({
   wallpapers,
   fetchData,
   onExit,
+  isAdminMode,
+  allUsers,
+  allComments,
+  newCategoryName,
+  setNewCategoryName,
+  newCategoryType,
+  setNewCategoryType,
+  editingCategory,
+  setEditingCategory,
+  editCategoryName,
+  setEditCategoryName,
+  uploadStatus,
+  handleBlockUser,
+  handleDeleteUser,
+  handleAddCategory,
+  handleUpdateCategory,
+  deleteCommentAdmin,
 }) => {
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
-  const [activeTab, setActiveTab] = useState<'stories' | 'reels' | 'wallpapers' | 'comments' | 'saved'>('stories');
+  const [activeTab, setActiveTab] = useState<'stories' | 'reels' | 'wallpapers' | 'comments' | 'saved' | 'users' | 'categories' | 'moderation'>('stories');
   const [savedContent, setSavedContent] = useState<any[]>([]);
   const [userComments, setUserComments] = useState<any[]>([]);
   const [replyToId, setReplyToId] = useState<string | null>(null);
@@ -487,8 +521,8 @@ export const UserPanel: React.FC<UserPanelProps> = ({
             <button onClick={onExit} className="p-2 hover:bg-white/10 rounded-full transition-colors">
               <ArrowLeft className="w-6 h-6 text-white" />
             </button>
-            <h1 className="text-2xl font-black bg-gradient-to-r from-orange-500 to-rose-500 bg-clip-text text-transparent">
-              USER PANEL
+            <h1 className="text-xl sm:text-2xl font-black bg-gradient-to-r from-orange-500 to-rose-500 bg-clip-text text-transparent uppercase tracking-tighter">
+              {isAdminMode ? 'Admin Panel' : 'User Panel'}
             </h1>
           </div>
           <div className="flex items-center gap-4">
@@ -652,10 +686,10 @@ export const UserPanel: React.FC<UserPanelProps> = ({
           <h2 className="text-xl font-bold text-white mb-6">My Uploaded Content</h2>
 
           {/* Tab Navigation */}
-          <div className="flex bg-white/5 p-1 rounded-xl w-fit mb-6 border border-white/10">
+           <div className="flex bg-white/5 p-1 rounded-xl w-fit mb-6 border border-white/10 overflow-x-auto no-scrollbar max-w-full">
             <button
               onClick={() => setActiveTab('stories')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'stories'
                   ? 'bg-blue-500 text-white'
                   : 'text-white/60 hover:text-white hover:bg-white/5'
@@ -664,49 +698,88 @@ export const UserPanel: React.FC<UserPanelProps> = ({
               Stories ({userStories.length})
             </button>
             <button
-              onClick={() => setActiveTab('reels')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'reels'
-                  ? 'bg-purple-500 text-white'
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              Reels ({userReels.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('wallpapers')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'wallpapers'
-                  ? 'bg-orange-500 text-white'
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              Wallpapers ({userWallpapers.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('comments')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'comments'
-                  ? 'bg-green-500 text-white'
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              Comments ({userComments.length})
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('saved');
-                fetchSavedContent();
-              }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'saved'
-                  ? 'bg-rose-500 text-white'
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              Saved ({savedContent.length})
-            </button>
-          </div>
+               onClick={() => setActiveTab('reels')}
+               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                 activeTab === 'reels'
+                   ? 'bg-purple-500 text-white'
+                   : 'text-white/60 hover:text-white hover:bg-white/5'
+               }`}
+             >
+               Reels ({userReels.length})
+             </button>
+             <button
+               onClick={() => setActiveTab('wallpapers')}
+               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                 activeTab === 'wallpapers'
+                   ? 'bg-orange-500 text-white'
+                   : 'text-white/60 hover:text-white hover:bg-white/5'
+               }`}
+             >
+               Wallpapers ({userWallpapers.length})
+             </button>
+             <button
+               onClick={() => setActiveTab('comments')}
+               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                 activeTab === 'comments'
+                   ? 'bg-emerald-500 text-white'
+                   : 'text-white/60 hover:text-white hover:bg-white/5'
+               }`}
+             >
+               My Comments ({userComments.length})
+             </button>
+             <button
+               onClick={() => {
+                 setActiveTab('saved');
+                 fetchSavedContent();
+               }}
+               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                 activeTab === 'saved'
+                   ? 'bg-rose-500 text-white'
+                   : 'text-white/60 hover:text-white hover:bg-white/5'
+               }`}
+             >
+               Saved ({savedContent.length})
+             </button>
+
+             {isAdminMode && (
+               <>
+                 <div className="w-[1px] bg-white/10 mx-2 self-stretch" />
+                 <button
+                   onClick={() => setActiveTab('users')}
+                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+                     activeTab === 'users'
+                       ? 'bg-amber-500 text-white'
+                       : 'text-white/60 hover:text-white hover:bg-white/5'
+                   }`}
+                 >
+                   <Users className="w-4 h-4" />
+                   Users ({allUsers.length})
+                 </button>
+                 <button
+                   onClick={() => setActiveTab('categories')}
+                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+                     activeTab === 'categories'
+                       ? 'bg-cyan-500 text-white'
+                       : 'text-white/60 hover:text-white hover:bg-white/5'
+                   }`}
+                 >
+                   <Settings className="w-4 h-4" />
+                   Categories ({categories.length})
+                 </button>
+                 <button
+                   onClick={() => setActiveTab('moderation')}
+                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2 ${
+                     activeTab === 'moderation'
+                       ? 'bg-red-500 text-white'
+                       : 'text-white/60 hover:text-white hover:bg-white/5'
+                   }`}
+                 >
+                   <Shield className="w-4 h-4" />
+                   Moderate ({allComments.length})
+                 </button>
+               </>
+             )}
+           </div>
 
           {/* Content Display */}
           {activeTab === 'stories' && renderContentList(userStories, 'stories')}
@@ -767,6 +840,132 @@ export const UserPanel: React.FC<UserPanelProps> = ({
                 </div>
               )}
             </div>
+          )}
+
+          {/* Admin Panels */}
+          {isAdminMode && (
+            <>
+              {activeTab === 'users' && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {allUsers.map(u => (
+                      <div key={u.id} className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-full bg-white/10 overflow-hidden shrink-0">
+                            {u.avatar_url ? <img src={u.avatar_url} className="w-full h-full object-cover" /> : <UserIcon className="w-full h-full p-2 text-white/40" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-white truncate">@{u.username}</h4>
+                            <p className="text-[10px] text-white/40 uppercase tracking-widest leading-tight">Member since {new Date(u.created_at).toLocaleDateString()}</p>
+                          </div>
+                          {u.is_blocked && (
+                            <div className="px-2 py-0.5 bg-red-500 text-white text-[8px] font-black rounded uppercase tracking-widest">Blocked</div>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => handleBlockUser(u.id, u.is_blocked ? 0 : 24)}
+                            className={cn(
+                              "flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all",
+                              u.is_blocked ? "bg-emerald-500/10 border-emerald-500 text-emerald-500" : "bg-red-500/10 border-red-500 text-red-500"
+                            )}
+                          >
+                            {u.is_blocked ? 'Unblock' : 'Block 24h'}
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteUser(u.id)}
+                            className="p-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'categories' && (
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-6">
+                    <h3 className="text-sm font-black uppercase tracking-[0.2em] text-cyan-400">Add New Category</h3>
+                    <form onSubmit={handleAddCategory} className="flex flex-col sm:flex-row gap-3">
+                      <input 
+                        type="text" 
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="Category Name"
+                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-cyan-400/50 outline-none"
+                      />
+                      <select 
+                        value={newCategoryType}
+                        onChange={(e) => setNewCategoryType(e.target.value as 'story' | 'wallpaper')}
+                        className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-cyan-400/50 outline-none"
+                      >
+                        <option value="story">Story</option>
+                        <option value="wallpaper">Wallpaper</option>
+                      </select>
+                      <button type="submit" className="bg-cyan-500 text-white px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-cyan-400 transition-colors">
+                        Add
+                      </button>
+                    </form>
+                    {uploadStatus && (
+                      <p className={cn("text-xs font-bold", uploadStatus.type === 'success' ? "text-emerald-400" : "text-red-400")}>
+                        {uploadStatus.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {categories.map(cat => (
+                      <div key={cat.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl group relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                          <button 
+                             onClick={() => {
+                               setEditingCategory(cat);
+                               setEditCategoryName(cat.name);
+                             }}
+                            className="p-1.5 bg-white/10 rounded-lg hover:bg-cyan-500 transition-colors"
+                          >
+                            <Settings className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <p className="text-[8px] font-black text-cyan-400 uppercase tracking-widest mb-1">{cat.type}</p>
+                        <h4 className="font-bold text-white truncate">{cat.name}</h4>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'moderation' && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                   {allComments.map((comment: any) => (
+                    <div key={comment.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-start justify-between group">
+                      <div className="flex gap-4">
+                        <div className="w-10 h-10 rounded-full bg-white/10 overflow-hidden shrink-0">
+                          {comment.profiles?.avatar_url ? <img src={comment.profiles.avatar_url} className="w-full h-full object-cover" /> : <UserIcon className="w-full h-full p-2 text-white/40" />}
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                             <span className="text-xs font-black text-white">@{comment.profiles?.username}</span>
+                             <span className="text-[10px] text-white/40">{new Date(comment.created_at).toLocaleString()}</span>
+                          </div>
+                          <p className="text-sm text-white/80">{comment.content}</p>
+                          <p className="text-[9px] text-white/20 uppercase font-black tracking-widest">Post ID: {comment.post_id}</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => deleteCommentAdmin(comment.id)}
+                        className="p-2.5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all transform hover:scale-105"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

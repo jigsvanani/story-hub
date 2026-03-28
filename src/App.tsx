@@ -389,12 +389,20 @@ export default function App() {
   };
 
   const handleAdminToggle = () => {
-    if (user?.email === 'jigs.vanani@gmail.com') {
+    if (user) {
       setIsAdmin(!isAdmin);
-      if (!isAdmin) {
-        window.history.pushState({}, '', '/admin');
+      if (user.email === 'jigs.vanani@gmail.com') {
+        if (!isAdmin) {
+          window.history.pushState({}, '', '/admin');
+        } else {
+          window.history.pushState({}, '', '/');
+        }
       } else {
-        window.history.pushState({}, '', '/');
+        if (!isAdmin) {
+          window.history.pushState({}, '', '/user');
+        } else {
+          window.history.pushState({}, '', '/');
+        }
       }
     }
   };
@@ -1049,6 +1057,23 @@ export default function App() {
         wallpapers={wallpapers} 
         fetchData={fetchData} 
         onExit={() => setIsAdmin(false)}
+        isAdminMode={user?.email === 'jigs.vanani@gmail.com'}
+        allUsers={allUsers}
+        allComments={allComments}
+        newCategoryName={newCategoryName}
+        setNewCategoryName={setNewCategoryName}
+        newCategoryType={newCategoryType}
+        setNewCategoryType={setNewCategoryType}
+        editingCategory={editingCategory}
+        setEditingCategory={setEditingCategory}
+        editCategoryName={editCategoryName}
+        setEditCategoryName={setEditCategoryName}
+        uploadStatus={uploadStatus}
+        handleBlockUser={handleBlockUser}
+        handleDeleteUser={handleDeleteUser}
+        handleAddCategory={handleAddCategory}
+        handleUpdateCategory={handleUpdateCategory}
+        deleteCommentAdmin={deleteCommentAdmin}
       />
     );
   }
@@ -1136,13 +1161,14 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-3 sm:hidden">
-               {user?.email === 'jigs.vanani@gmail.com' && (
+               {user && (
                  <button 
                    onClick={handleAdminToggle}
                    className={cn(
                      "p-2 rounded-lg border transition-all active:scale-95",
                      isAdmin ? "bg-orange-500 border-orange-500 text-white" : "bg-white/5 border-white/10 text-orange-500"
                    )}
+                   title={user.email === 'jigs.vanani@gmail.com' ? 'Admin Panel' : 'User Panel'}
                  >
                    <Shield className="w-5 h-5" />
                  </button>
@@ -1195,7 +1221,7 @@ export default function App() {
           <div className="hidden sm:flex items-center gap-4">
              {user ? (
                 <div className="flex items-center gap-4">
-                  {user?.email === 'jigs.vanani@gmail.com' && (
+                  {user && (
                     <button 
                       onClick={handleAdminToggle}
                       className={cn(
@@ -1206,7 +1232,9 @@ export default function App() {
                       )}
                     >
                       <Shield className="w-4 h-4" />
-                      {isAdmin ? 'Exit Admin' : 'Admin Panel'}
+                      {isAdmin 
+                        ? (user.email === 'jigs.vanani@gmail.com' ? 'Exit Admin' : 'Exit Panel') 
+                        : (user.email === 'jigs.vanani@gmail.com' ? 'Admin Panel' : 'User Panel')}
                     </button>
                   )}
                   <button 
